@@ -7,22 +7,18 @@ struct CameraPos
 
 };
 
-class Camera
+class Camera : public Singleton<Camera>
 {
+	friend class Singleton<Camera>;   // 베이스가 private 생성자에 접근하도록 허용
 private:
-	//	유일한 객체
-	// 먼저 데이타 영역에 올라감
-	static Camera* m_pInstance;
+	Camera(void);                     // 외부 생성 차단 (싱글톤)
+
 	CameraPos camPos;
 
 	float m_ShakeIntensity;   // 흔들림 강도
 	DWORD m_ShakeEndTime;     // 흔들림 끝나는 시간
 public:
-	Camera(void);
 	~Camera(void);
-
-	//	객체 얻기
-	static Camera*	GetInstance();
 
 	// 맵 전체 크기 (이 밖으로 카메라가 못 나감)
 	int mapWidth, mapHeight;

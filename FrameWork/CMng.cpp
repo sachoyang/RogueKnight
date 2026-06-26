@@ -1,4 +1,4 @@
-#include "Include.h"
+﻿#include "Include.h"
 CMng g_Mng;
 
 CMng::CMng()

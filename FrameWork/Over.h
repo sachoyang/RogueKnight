@@ -1,4 +1,4 @@
-#ifndef __Over_H__
+ï»¿#ifndef __Over_H__
 #define __Over_H__
 
 class Over : public Chap
@@ -7,8 +7,8 @@ public:
 	Over();
 	~Over();
 
-	Sprite m_Title;    // "GAMEOVER" ÀÌ¹ÌÁö
-	int m_Alpha;       // Åõ¸íµµ (0 ~ 255)
+	Sprite m_Title;    // "GAMEOVER" ì´ë¯¸ì§€
+	int m_Alpha;       // íˆ¬ëª…ë„ (0 ~ 255)
 
 	D3DXIMAGE_INFO imagesinfo;
 

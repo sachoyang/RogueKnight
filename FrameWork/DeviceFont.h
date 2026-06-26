@@ -1,4 +1,4 @@
-class g_DeviceFont
+﻿class g_DeviceFont
 {
 public:
 	IDirect3D9* Direct3D;

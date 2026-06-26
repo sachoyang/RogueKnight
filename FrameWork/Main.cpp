@@ -6,9 +6,6 @@ const int SKIP_TICKS = 1000 / TICKS_PER_SECOND;
 const int MAX_FRAMESKIP = 5;
 int loops;
 float interpolation;
-// 버퍼 추가
-char buffer[128] = {0,0,0,0};
-char ch[3] = {0,0,0}; //D  strcat 사용법 틀림 최소 널이 들어갈수 있도록 해줘야함
 ////////////////////////////////////
 LRESULT CALLBACK WndProc( HWND g_hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
@@ -98,19 +95,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdL
 	///////////////////////////////////////////////////////////////////
 	ZeroMemory(&msg, sizeof(MSG));
 	//TRACE("REV ====== %s ========= \n\n", buffer);
-	/////////// 챕터 초기화 /////////////////
-	g_Mng.chap[LOGO] = new Logo;
-	g_Mng.chap[MENU] = new Menu;
-	g_Mng.chap[GAME] = new Game;
-	g_Mng.chap[OVER] = new Over;
-	g_Mng.chap[ENDING] = new Ending; // 🌟 [추가]
+	/////////// 챕터(씬) 초기화 /////////////////
+	// unique_ptr 소유 → 종료 시 자동 해제
+	g_Mng.chap[LOGO]   = std::make_unique<Logo>();
+	g_Mng.chap[MENU]   = std::make_unique<Menu>();
+	g_Mng.chap[GAME]   = std::make_unique<Game>();
+	g_Mng.chap[OVER]   = std::make_unique<Over>();
+	g_Mng.chap[ENDING] = std::make_unique<Ending>();
 	/////////////////////////////////////////
 
-	/*for(int i=0; i<TOTALCHAP; i++)
-		g_Mng.chap[i]->Init();*/
 	for (int i = 0; i < TOTALCHAP; i++)
 	{
-		if (g_Mng.chap[i] != NULL)
+		if (g_Mng.chap[i])
 		{
 			g_Mng.chap[i]->Init();
 		}
@@ -151,51 +147,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdL
 	}
 
 	return msg.wParam;
-
-	//while( msg.message != WM_QUIT )
-	//{
-	//	if(PeekMessage(&msg,NULL,0,0,PM_NOREMOVE))
-	//	{
-	//		if(GetMessage(&msg, NULL, 0, 0))
-	//		{
-	//			TranslateMessage(&msg);
-	//			DispatchMessage(&msg);
-	//		}
-	//	}
-	//	else
-	//	{
-	//		
-	//		static DWORD next_game_tick = GetTickCount();
-	//		//static DWORD next_game_tick1 = GetTickCount();
-	//		
-	//		loops = 0;
-	//	
-	//		//static int aa;
-	//		//bool b = false;
-	//		while( GetTickCount64() > next_game_tick && loops < MAX_FRAMESKIP) 
-	//		{
-	//			interpolation = float(GetTickCount64() + SKIP_TICKS - next_game_tick ) / float( SKIP_TICKS );
-	//			if(Gmanager.m_Pause == false) g_Mng.chap[g_Mng.n_Chap]->Update(interpolation);
-	//			//if(b == false)
-	//			//{
-	//			//	aa = interpolation;
-	//			//	b = true;
-	//			//}
-	//			g_Mng.chap[g_Mng.n_Chap]->OnMessage(&msg);
-	//			next_game_tick += SKIP_TICKS;
-	//			loops++;
-	//		}
-	//		
-	//		dv_font.Device9->BeginScene();
-	//		dv_font.Device9->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 0, 0);
-	//		g_Mng.chap[g_Mng.n_Chap]->Draw();
-	//		dv_font.Device9->EndScene();
-	//		dv_font.Device9->Present(NULL, NULL, NULL, NULL);
-	//		
-	//	}
-	//}
-	//return msg.wParam;
-
 }
 
 // 키 한번만 먹을거는 여기가 안전...아니면 귀찮다.(key.cpp 에서 연속키 안먹게 하기 위해 로직이 더러워짐)
@@ -206,7 +157,7 @@ LRESULT CALLBACK WndProc( HWND g_hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	case WM_ERASEBKGND:
 		return 1;
 	case WM_COMMAND:
-		if (g_Mng.chap[g_Mng.n_Chap] != NULL)
+		if (g_Mng.chap[g_Mng.n_Chap])
 		{
 			// 메시지 포장해서 OnMessage로 토스
 			MSG msg;
@@ -222,54 +173,17 @@ LRESULT CALLBACK WndProc( HWND g_hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
          PostQuitMessage( 0 );
          return 0;
 	case WM_CHAR:
-		 ch[0] = wParam;
-		 strcat( buffer,ch);
-		 // 문자열 위치 가져옴...
-		 if (strstr(buffer, "p") != NULL)
-		 {
-
-			 if (GetTickCount64() - key.KeyTime > 200)
-			 {
-				 Gmanager.m_Pause = !Gmanager.m_Pause;
-
-				 key.KeyTime = GetTickCount64();
-			 }
-		 }
-		 //else if (strstr(buffer, "s") != NULL) 
-		 //{
-			// // 데이타 베이스 저장
-			// sql.save();
-		 //}
-
-        ZeroMemory( &buffer, sizeof(buffer) );
+		// 'p' 키로 일시정지 토글. 한 글자 명령은 직접 비교가 안전·명확하다.
+		// (기존: 고정 버퍼 + strcat 누적 → 버퍼 오버플로 위험 제거)
+		if (wParam == 'p' || wParam == 'P')
+		{
+			if (GetTickCount64() - key.KeyTime > 200)
+			{
+				Gmanager.m_Pause = !Gmanager.m_Pause;
+				key.KeyTime = GetTickCount64();
+			}
+		}
 		break;
-
-
-	//case WM_COMM_RXCHAR:  //시리얼에서 받는 메세지는 여기를 
-	//	 ch[0] = wParam;
-	//	 strcat( buffer,ch);	
-	//     TRACE("REV ====== %s ========= \n\n", buffer);
-
-
-
-
 	}
 	return DefWindowProc( g_hWnd, uMsg, wParam, lParam ) ;
 }
-
-/*
-
-함수원형 : char* strstr(char* str1, const char* str2);
-
-0) 헤더파일 : C언어 : <string.h> / C++ : <cstring>
-
-1) str1에서 str2와 일치하는 문자열이 있는지 확인을 하는 함수.
-
-2) str1에 str2의 문자열과 일치하는 문자열이 있으면 해당 위치의 포인터(char* 타입)를 반환.
-
-3) 당연하게도 일치하는 문자열을 찾지 못하면 null pointer를 반환. (그렇기 때문에 널체크를 꼭! 해주어야 함.)
-
-4) 문자열을 찾아서, 문자열을 바꾸는 경우에는 원본 문자열 str1의 배열의 길이를 반드시 생각해야함. 배열의 범위를 넘으면, 큰일이니깐.
-
-
-*/

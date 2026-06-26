@@ -8,7 +8,9 @@
 
 //////////////////////////////////////////////////////
 -----------------------------------------------------*/
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif
 #pragma comment(lib,"d3d9.lib")
 #pragma comment(lib,"d3dx9.lib")
 #pragma comment(lib,"dsound.lib")
@@ -54,6 +56,7 @@
 // =========================================
 // 1단계: 코어 (가장 기본 도구들)
 // =========================================
+#include "Singleton.h"
 #include "Camera.h"
 #include "Key.h"
 #include "Sound.h"

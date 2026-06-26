@@ -1,23 +1,7 @@
 ﻿#include "Include.h"
 
-
-Camera cam;
-
-//	유일 객체 (데이타 영역에 올라간 변수에 초기값 을 nullptr 로 셋팅)
-//  이 로직은 프로그램 시작전에(main 호출) 실행된다.
-Camera * Camera::m_pInstance = nullptr;
-
-Camera* Camera::GetInstance()
-{
-	if (m_pInstance == nullptr)
-	{
-		// 힙 메모리에 객체 할당 and 데이타 영역의 참조 변수에 주소 할당
-		m_pInstance = new Camera();
-	}
-
-	return m_pInstance;
-}
-
+// 싱글톤 인스턴스는 Singleton<Camera>::GetInstance() 가 관리한다.
+// (기존의 전역 new + static 포인터 방식 제거 → 누수/초기화 순서 문제 해결)
 
 Camera::Camera()
 {

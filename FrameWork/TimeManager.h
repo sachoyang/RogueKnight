@@ -1,8 +1,10 @@
 ﻿#pragma once
 #include "Include.h"
+#include "Singleton.h"
 
-class TimeManager
+class TimeManager : public Singleton<TimeManager>
 {
+    friend class Singleton<TimeManager>;
 private:
     TimeManager();  // 싱글톤을 위해 private 처리
     ~TimeManager();
@@ -21,12 +23,7 @@ private:
     DWORD m_PrevRealTime;
 
 public:
-    // 싱글톤 인스턴스 반환
-    static TimeManager* GetInstance() {
-        static TimeManager instance;
-        return &instance;
-    }
-
+    // 싱글톤 인스턴스는 Singleton<TimeManager>::GetInstance() 가 제공
     void Init();
     void ResetTime(); // 맵 이동 시 시간 강제 정상화용
 

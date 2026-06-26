@@ -1,10 +1,14 @@
+﻿#include <wrl/client.h>   // Microsoft::WRL::ComPtr (자동 Release)
+
 class Sprite
 {
 public:
 	Sprite(void);
 	~Sprite(void);
- 
-	IDirect3DTexture9 *Texture;
+
+	// RAII: ComPtr 가 소멸/재생성 시 자동으로 Release() 호출 → GPU 텍스처 누수 방지.
+	// (기존 raw IDirect3DTexture9* 는 소멸자에서 Release 하지 않아 누수 발생)
+	Microsoft::WRL::ComPtr<IDirect3DTexture9> Texture;
 	D3DXIMAGE_INFO imagesinfo;
 	D3DCOLOR color;
 

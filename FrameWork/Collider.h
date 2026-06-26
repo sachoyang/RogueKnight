@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "Include.h"
 
 class Collider
@@ -11,14 +11,14 @@ public :
 
 	std::list<RECT> m_Walls;
 
-	bool isDebugDraw;	//Äİ¶óÀÌ´õ ¹Ú½º ½ºÀ§Ä¡
+	bool isDebugDraw;	//ì½œë¼ì´ë” ë°•ìŠ¤ ìŠ¤ìœ„ì¹˜
 
 	void Init();
 	void Update();
 	void Draw();
 
 	void BoxSow(RECT m_rc, long x, long y, D3DCOLOR color = D3DCOLOR_ARGB(255, 0, 255, 0));
-	// [Ãß°¡] ¸Ê ¹Ù²ğ ¶§¸¶´Ù º® ¸®¼ÂÇÏ°í ´Ù½Ã ¼¼ÆÃÇÏ´Â ÇÔ¼ö
+	// [ì¶”ê°€] ë§µ ë°”ë€” ë•Œë§ˆë‹¤ ë²½ ë¦¬ì…‹í•˜ê³  ë‹¤ì‹œ ì„¸íŒ…í•˜ëŠ” í•¨ìˆ˜
 	void ClearWalls() { m_Walls.clear(); }
 	void AddWall(RECT rc) { m_Walls.push_back(rc); }
 };

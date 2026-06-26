@@ -1,4 +1,4 @@
-#define _CRT_NONSTDC_NO_DEPRECATE
+ï»¿#define _CRT_NONSTDC_NO_DEPRECATE
 #include "Include.h"
 
 GameManager Gmanager;
@@ -32,13 +32,13 @@ void GameManager::Init()
 	//char seps[] = ",\n";
 	//char *token;
 
-	// ÅØ½ºÆ® ¹öÀü
+	// í…ìŠ¤íŠ¸ ë²„ì „
 	//if ((fp = fopen("C:\\SYSTEM.txt","r"))== NULL)
 	//{
 	//	return ;
 	//}
 	
-	//// ±â°è¾î ¹öÀü
+	//// ê¸°ê³„ì–´ ë²„ì „
 	//if ((fp = fopen("./Save/save.fss","rb"))== NULL)
 	//{
 	//	return ;
@@ -53,7 +53,7 @@ void GameManager::Init()
 
 void GameManager::Update()
 {
-	//if(°ÔÀÓ Á¾·á½Ã) g_Mng.n_Chap = OVER; 
+	//if(ê²Œì„ ì¢…ë£Œì‹œ) g_Mng.n_Chap = OVER; 
 
 	//if (Respawn)
 	//{
@@ -68,7 +68,7 @@ void GameManager::Update()
 }
 void GameManager::Save()
 {
-	// ÅØ½ºÆ® ¹öÀüÀº "w" ·Î
+	// í…ìŠ¤íŠ¸ ë²„ì „ì€ "w" ë¡œ
 	if ((fp = fopen("./Save/save.fss", "wb")) == NULL)
 	{
 		return;
@@ -86,7 +86,7 @@ void GameManager::Delete()
 
 
 
-void GameManager::GameReset(void)  // ¿©±â´Â °ÔÀÓ»ó Ã·¿¡ ÇÑ¹ø¸¸  ÃÊ±âÈ­µÇ´Â ºÎºĞ¸¸ ³Ö¾îÁÜ.
+void GameManager::GameReset(void)  // ì—¬ê¸°ëŠ” ê²Œì„ìƒ ì²¨ì— í•œë²ˆë§Œ  ì´ˆê¸°í™”ë˜ëŠ” ë¶€ë¶„ë§Œ ë„£ì–´ì¤Œ.
 {
 
 }
@@ -104,9 +104,9 @@ void GameManager::Draw()
 	//map.numimg[0].Draw(95, 53);
 	char show[20];
 	itoa(m_SysTem.m_Save1, show, 10);
-	//dv_font.DrawString(show, 200, 210);   //±ÛÀÚÃâ·Â
+	//dv_font.DrawString(show, 200, 210);   //ê¸€ìì¶œë ¥
 	itoa(m_SysTem.m_Save2, show, 10);
-	//dv_font.DrawString(show, 200, 310);   //±ÛÀÚÃâ·Â
+	//dv_font.DrawString(show, 200, 310);   //ê¸€ìì¶œë ¥
 
 	//for (auto Iter = myList.begin(); Iter != myList.end(); Iter++)
 	//{

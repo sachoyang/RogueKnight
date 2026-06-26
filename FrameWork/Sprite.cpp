@@ -1,10 +1,10 @@
-#include "Include.h"
+ï»¿#include "Include.h"
 
 Sprite g_Load;
 
 Sprite::Sprite(void)
 {
-	Texture = NULL;
+	// ComPtr ëŠ” ê¸°ë³¸ ìƒì„± ì‹œ nullptr ë¡œ ì´ˆê¸°í™”ë¨ (ë³„ë„ ì²˜ë¦¬ ë¶ˆí•„ìš”)
 }
 
 Sprite::~Sprite(void)
@@ -24,12 +24,13 @@ bool Sprite::Create(const char* filename, bool bUseTransparency, D3DCOLOR Transp
 	
 	hr = D3DXCreateTextureFromFileEx(dv_font.Device9 ,
 		filename , imagesinfo.Width , imagesinfo.Height , 1 , 0 , 	D3DFMT_UNKNOWN , D3DPOOL_MANAGED,
-		D3DX_DEFAULT, 	D3DX_DEFAULT, transparencycolor,	&imagesinfo , 	NULL, 	&Texture ) ; 
-	
-	// ¸¸¾à °æ·Î¿¡ ÀÌ¹ÌÁö°¡ ¾ø¾î¼­ ·Îµù¿¡ ½ÇÆĞÇß´Ù¸é?
+		D3DX_DEFAULT, 	D3DX_DEFAULT, transparencycolor,	&imagesinfo , 	NULL,
+		Texture.ReleaseAndGetAddressOf() ) ;   // ì¬ìƒì„± ì‹œ ê¸°ì¡´ í…ìŠ¤ì²˜ ìë™ Release
+
+	// ë§Œì•½ ê²½ë¡œì— ì´ë¯¸ì§€ê°€ ì—†ì–´ì„œ ë¡œë”©ì— ì‹¤íŒ¨í–ˆë‹¤ë©´?
 	if (FAILED(hr)) {
-		Texture = NULL; // ÅØ½ºÃ³¸¦ NULL·Î ¸¸µé°í
-		return false;   // ±×³É Á¶¿ëÈ÷ µ¹¾Æ°¡¶ó (°ÔÀÓ Æ¨±è ¹æÁö!)
+		Texture.Reset(); // í…ìŠ¤ì²˜ë¥¼ ë¹„ìš°ê³ 
+		return false;    // ê·¸ëƒ¥ ì¡°ìš©íˆ ëŒì•„ê°€ë¼ (ê²Œì„ íŠ•ê¹€ ë°©ì§€!)
 	}
 
 	return TRUE;
@@ -44,10 +45,10 @@ bool Sprite::Create(const char* filename, bool bUseTransparency, D3DCOLOR Transp
 
 }
 
-void Sprite::Draw( float dx , float dy , float sx , float sy , float sw , float sh, float centerX, float centerY ) // È­¸éÀÇ dx, dy¿¡
+void Sprite::Draw( float dx , float dy , float sx , float sy , float sw , float sh, float centerX, float centerY ) // í™”ë©´ì˜ dx, dyì—
 {				
-	if (Texture == NULL) return;
-														// ±×¸²ÀÇ sx, syºÎÅÍ sw, sh ±îÁö Ãâ·ÂÇØ¶ó
+	if (!Texture) return;
+														// ê·¸ë¦¼ì˜ sx, syë¶€í„° sw, sh ê¹Œì§€ ì¶œë ¥í•´ë¼
 	RECT srcRect = { sx , sy , sw , sh } ;
 
 	D3DXVECTOR3 position( (float)dx, (float)dy, 1.0f ) ;
@@ -59,15 +60,15 @@ void Sprite::Draw( float dx , float dy , float sx , float sy , float sw , float 
 
 	dv_font.Sprite->Begin( D3DXSPRITE_ALPHABLEND ) ;
 
-	dv_font.Sprite->Draw( Texture , &srcRect ,	&center , &position , color ) ;
+	dv_font.Sprite->Draw( Texture.Get() , &srcRect ,	&center , &position , color ) ;
 
 	dv_font.Sprite->End() ;
 
 }
 
-void Sprite::Draw(float x, float y)		// È­¸éÀÇ x, y ¿¡ Ãâ·ÂÇØ¶ó.
+void Sprite::Draw(float x, float y)		// í™”ë©´ì˜ x, y ì— ì¶œë ¥í•´ë¼.
 {
-	if (Texture == NULL) return;
+	if (!Texture) return;
 	D3DXVECTOR3 pos;
 	pos.x = x;
 	pos.y = y;
@@ -75,14 +76,14 @@ void Sprite::Draw(float x, float y)		// È­¸éÀÇ x, y ¿¡ Ãâ·ÂÇØ¶ó.
 
 	dv_font.Sprite->Begin( D3DXSPRITE_ALPHABLEND ) ;
 
-	dv_font.Sprite->Draw( Texture ,NULL ,	NULL , &pos , color ) ;
+	dv_font.Sprite->Draw( Texture.Get() ,NULL ,	NULL , &pos , color ) ;
 
 	dv_font.Sprite->End() ;
 }
 
-//void Sprite::Render( float x , float y , float radian, float sx, float sy) // È¸Àü, È®´ë Ãâ·Â
-//{																	   // sx -1 : ÁÂ¿ì¹İÀü, sy -1 = »óÇÏ¹İÀü
-//	RECT Rect ;														   // sx 0 : ¾ø¾îÁü, 1 : ±×´ë·Î, 2 : xÃàÀ¸·Î 2¹è È®´ë
+//void Sprite::Render( float x , float y , float radian, float sx, float sy) // íšŒì „, í™•ëŒ€ ì¶œë ¥
+//{																	   // sx -1 : ì¢Œìš°ë°˜ì „, sy -1 = ìƒí•˜ë°˜ì „
+//	RECT Rect ;														   // sx 0 : ì—†ì–´ì§, 1 : ê·¸ëŒ€ë¡œ, 2 : xì¶•ìœ¼ë¡œ 2ë°° í™•ëŒ€
 //	ID3DXSprite* pSprite ;
 //
 //	pSprite = dv_font.Sprite ;
@@ -99,7 +100,7 @@ void Sprite::Draw(float x, float y)		// È­¸éÀÇ x, y ¿¡ Ãâ·ÂÇØ¶ó.
 //	pSprite->SetTransform( &( scale * rot * trans ) ) ;
 //
 //	dv_font.Sprite->Begin(D3DXSPRITE_ALPHABLEND) ;
-//	pSprite->Draw( Texture , &Rect, NULL, NULL , 0xFFFFFFFF ) ;
+//	pSprite->Draw( Texture.Get() , &Rect, NULL, NULL , 0xFFFFFFFF ) ;
 //	pSprite->Flush() ;
 //	dv_font.Sprite->End() ;
 //
@@ -108,10 +109,10 @@ void Sprite::Draw(float x, float y)		// È­¸éÀÇ x, y ¿¡ Ãâ·ÂÇØ¶ó.
 //	pSprite->SetTransform( &identity ) ;
 //}
 
-void Sprite::Render( float x , float y , float radian, float sx, float sy, int pivotMode) // È¸Àü, È®´ë Ãâ·Â
+void Sprite::Render( float x , float y , float radian, float sx, float sy, int pivotMode) // íšŒì „, í™•ëŒ€ ì¶œë ¥
 {   
-	if (Texture == NULL) return;// sx -1 : ÁÂ¿ì¹İÀü, sy -1 = »óÇÏ¹İÀü
-    RECT Rect ;                                                           // sx 0 : ¾ø¾îÁü, 1 : ±×´ë·Î, 2 : xÃàÀ¸·Î 2¹è È®´ë
+	if (!Texture) return;// sx -1 : ì¢Œìš°ë°˜ì „, sy -1 = ìƒí•˜ë°˜ì „
+    RECT Rect ;                                                           // sx 0 : ì—†ì–´ì§, 1 : ê·¸ëŒ€ë¡œ, 2 : xì¶•ìœ¼ë¡œ 2ë°° í™•ëŒ€
     ID3DXSprite* pSprite ;                                                // pivotMode 0: Left Top, 1: Center Mid
 
     pSprite = dv_font.Sprite ;
@@ -144,7 +145,7 @@ void Sprite::Render( float x , float y , float radian, float sx, float sy, int p
     pSprite->SetTransform( &matWorld) ;
 
     dv_font.Sprite->Begin(D3DXSPRITE_ALPHABLEND) ;
-    pSprite->Draw( Texture , &Rect, &center, NULL , color ) ;
+    pSprite->Draw( Texture.Get() , &Rect, &center, NULL , color ) ;
     pSprite->Flush() ;
     dv_font.Sprite->End() ;
 
@@ -156,9 +157,9 @@ void Sprite::Render( float x , float y , float radian, float sx, float sy, int p
 
 
 void Sprite::RenderDraw( float x , float y , float sx , float sy , float sw , float sh, float radian, float sl, float st) 
-																		// È¸Àü, È®´ë Ãâ·Â
-{																	   // sx -1 : ÁÂ¿ì¹İÀü, sy -1 = »óÇÏ¹İÀü
-	RECT Rect = {sx, sy, sw, sh};									   // sx 0 : ¾ø¾îÁü, 1 : ±×´ë·Î, 2 : xÃàÀ¸·Î 2¹è È®´ë
+																		// íšŒì „, í™•ëŒ€ ì¶œë ¥
+{																	   // sx -1 : ì¢Œìš°ë°˜ì „, sy -1 = ìƒí•˜ë°˜ì „
+	RECT Rect = {sx, sy, sw, sh};									   // sx 0 : ì—†ì–´ì§, 1 : ê·¸ëŒ€ë¡œ, 2 : xì¶•ìœ¼ë¡œ 2ë°° í™•ëŒ€
 	ID3DXSprite* pSprite ;
 
 	pSprite = dv_font.Sprite ;
@@ -182,7 +183,7 @@ void Sprite::RenderDraw( float x , float y , float sx , float sy , float sw , fl
 	D3DXMATRIX matWorld = scale * rot * trans;
 	pSprite->SetTransform(&matWorld);
 	dv_font.Sprite->Begin(D3DXSPRITE_ALPHABLEND) ;
-	pSprite->Draw( Texture , &Rect, &center, NULL , 0xFFFFFFFF ) ;
+	pSprite->Draw( Texture.Get() , &Rect, &center, NULL , 0xFFFFFFFF ) ;
 	pSprite->Flush() ;
 	dv_font.Sprite->End() ;
 

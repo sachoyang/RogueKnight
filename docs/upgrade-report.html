@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FrameWork 게임 프로젝트 · 코드 업그레이드 리포트</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --border:#2d333b;
+    --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#a371f7;
+    --before:#f85149; --beforebg:#2d1416; --after:#3fb950; --afterbg:#0f2417;
+    --crit:#f85149; --high:#db6d28; --mid:#d29922; --low:#3fb950;
+    --code:#0b0f15;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Pretendard",-apple-system,"Segoe UI","Malgun Gothic",sans-serif;line-height:1.65}
+  code,pre{font-family:"JetBrains Mono","Cascadia Code",Consolas,monospace}
+  a{color:var(--accent);text-decoration:none}
+
+  header.hero{padding:64px 24px 40px;text-align:center;
+    background:radial-gradient(1200px 400px at 50% -10%,rgba(88,166,255,.15),transparent),
+               radial-gradient(800px 300px at 80% 0%,rgba(163,113,247,.12),transparent)}
+  .hero h1{font-size:clamp(28px,5vw,46px);margin:0 0 10px;letter-spacing:-.02em}
+  .hero p{color:var(--muted);max-width:740px;margin:0 auto;font-size:17px}
+  .hero .meta{margin-top:24px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .chip{background:var(--panel);border:1px solid var(--border);border-radius:999px;
+    padding:7px 16px;font-size:13px;color:var(--muted)}
+  .chip b{color:var(--text)}
+
+  .verify{max-width:1080px;margin:28px auto 0;padding:16px 20px;border-radius:14px;
+    background:linear-gradient(90deg,rgba(63,185,80,.12),rgba(63,185,80,.03));
+    border:1px solid var(--after);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .verify .big{font-size:22px}
+  .verify b{color:var(--after)}
+  .verify span.k{color:var(--muted);font-size:14px}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 80px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:32px 0}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px}
+  .stat .n{font-size:30px;font-weight:700}
+  .stat .l{color:var(--muted);font-size:13px;margin-top:4px}
+  .stat.ok .n{color:var(--after)} .stat.plan .n{color:var(--accent)}
+  .stat.crit .n{color:var(--crit)} .stat.warn .n{color:var(--mid)}
+
+  h2.section{font-size:24px;margin:56px 0 8px;letter-spacing:-.01em}
+  h2.section .sub{display:block;font-size:14px;color:var(--muted);font-weight:400;margin-top:4px}
+
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 8px}
+  .filters button{background:var(--panel);border:1px solid var(--border);color:var(--muted);
+    border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;transition:.15s}
+  .filters button:hover{border-color:var(--accent);color:var(--text)}
+  .filters button.active{background:var(--accent);border-color:var(--accent);color:#04101f;font-weight:600}
+
+  .issue{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    margin:16px 0;overflow:hidden}
+  .issue summary{list-style:none;cursor:pointer;padding:18px 20px;display:flex;
+    align-items:center;gap:12px;user-select:none}
+  .issue summary::-webkit-details-marker{display:none}
+  .issue summary:hover{background:var(--panel2)}
+  .status{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .status.done{background:var(--afterbg);color:var(--after);border:1px solid var(--after)}
+  .status.plan{background:rgba(88,166,255,.1);color:var(--accent);border:1px solid var(--accent)}
+  .sev{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap}
+  .sev.crit{background:var(--beforebg);color:var(--crit)}
+  .sev.high{background:rgba(219,109,40,.14);color:var(--high)}
+  .sev.mid{background:rgba(210,153,34,.14);color:var(--mid)}
+  .issue .tag{font-size:11px;color:var(--muted);border:1px solid var(--border);
+    border-radius:6px;padding:3px 8px}
+  .issue .ttl{font-weight:600;flex:1;font-size:15px;min-width:200px}
+  .issue .file{font-size:12px;color:var(--muted);font-family:monospace}
+  .arrow{color:var(--muted);transition:.2s}
+  .issue[open] .arrow{transform:rotate(90deg)}
+
+  .body{padding:0 20px 20px;border-top:1px solid var(--border)}
+  .body .why{color:var(--muted);font-size:14px;margin:16px 0}
+  .body .why b{color:var(--text)}
+
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  @media(max-width:820px){.cmp{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+  .col{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--code)}
+  .col .hd{padding:8px 14px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .col.before .hd{background:var(--beforebg);color:var(--before)}
+  .col.after  .hd{background:var(--afterbg);color:var(--after)}
+  pre{margin:0;padding:14px;overflow-x:auto;font-size:12.5px;line-height:1.55;color:#c9d1d9}
+
+  .kw{color:#ff7b72} .ty{color:#79c0ff} .st{color:#a5d6ff}
+  .cm{color:#8b949e;font-style:italic} .fn{color:#d2a8ff} .nm{color:#79c0ff}
+
+  .pattern{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:22px;margin:16px 0}
+  .pattern h3{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pattern .pat-tag{font-size:11px;background:var(--accent2);color:#150a26;
+    padding:2px 8px;border-radius:6px;font-weight:700}
+  .pattern .st2{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700}
+  .pattern .st2.done{background:var(--afterbg);color:var(--after);border:1px solid var(--after)}
+  .pattern .st2.plan{background:rgba(88,166,255,.1);color:var(--accent);border:1px solid var(--accent)}
+  .pattern p{color:var(--muted);font-size:14px;margin:8px 0 0}
+
+  .road{counter-reset:step;margin-top:20px}
+  .road .step{position:relative;padding:16px 16px 16px 60px;background:var(--panel);
+    border:1px solid var(--border);border-radius:12px;margin:12px 0}
+  .road .step::before{counter-increment:step;content:counter(step);position:absolute;
+    left:16px;top:16px;width:30px;height:30px;border-radius:50%;background:var(--accent);
+    color:#04101f;font-weight:700;display:grid;place-items:center}
+  .road .step.ok::before{background:var(--after);content:"✓"}
+  .road .step h4{margin:0 0 4px;font-size:15px}
+  .road .step p{margin:0;color:var(--muted);font-size:13.5px}
+
+  .files{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+  @media(max-width:820px){.files{grid-template-columns:1fr}}
+  .files .f{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:13px}
+  .files .f code{color:var(--accent);font-size:12.5px}
+  .files .f span{color:var(--muted);display:block;margin-top:3px}
+
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:40px 24px;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1>🗡️ FrameWork 게임 프로젝트 · 코드 업그레이드 리포트</h1>
+  <p>DirectX 9 기반 2D 액션 플랫포머(Hollow Knight 스타일) 학습 프로젝트를
+     <b>실제로 리팩터링하고 빌드로 검증</b>했습니다. 아래 각 항목에서 <b>적용 전(Before) / 후(After)</b> 코드를 비교할 수 있습니다.</p>
+  <div class="meta">
+    <span class="chip">언어 <b>C++17 (VS2022 · v143)</b></span>
+    <span class="chip">렌더링 <b>Direct3D 9</b></span>
+    <span class="chip">사운드 <b>FMOD Ex</b></span>
+    <span class="chip">코드 규모 <b>~9,000 LOC</b></span>
+  </div>
+</header>
+
+<div class="verify">
+  <span class="big">✅</span>
+  <div>
+    <b>빌드 검증 완료</b> — <code>MSBuild · Debug|x64</code> 전체 재빌드 결과
+    <b>오류 0개</b>, <code>FrameWork.exe</code> 생성 성공.<br/>
+    <span class="k">원본 스냅샷은 <a href="before/">docs/before/</a> 에 보존되어 있습니다. (적용 후 = 현재 <code>FrameWork/</code> 소스)</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="stats">
+    <div class="stat ok"><div class="n">11</div><div class="l">적용 완료 항목</div></div>
+    <div class="stat crit"><div class="n">3</div><div class="l">치명적 결함 해결</div></div>
+    <div class="stat plan"><div class="n">5</div><div class="l">향후 디자인 패턴</div></div>
+    <div class="stat warn"><div class="n">0</div><div class="l">빌드 오류</div></div>
+  </div>
+
+  <h2 class="section">🔍 진단 &amp; 적용 결과
+    <span class="sub">구버전(전역 변수)과 신버전(싱글톤)이 혼재하던 코드를 일관된 구조로 정리했습니다. 각 항목을 펼쳐 Before/After 를 확인하세요.</span>
+  </h2>
+
+  <div class="filters" id="filters">
+    <button class="active" data-f="all">전체</button>
+    <button data-f="done">✅ 적용됨</button>
+    <button data-f="plan">🔵 향후</button>
+    <button data-f="security">🔒 보안</button>
+    <button data-f="bug">🐞 버그/UB</button>
+    <button data-f="arch">🏛️ 구조</button>
+    <button data-f="memory">🧹 메모리/RAII</button>
+    <button data-f="modern">✨ 모던 C++</button>
+  </div>
+
+  <div id="issues">
+
+  <!-- 1 -->
+  <details class="issue" data-cat="security" data-st="done">
+    <summary>
+      <span class="status done">✅ 적용됨</span>
+      <span class="sev crit">CRIT</span>
+      <span class="tag">🔒 보안</span>
+      <span class="ttl">DB 자격증명 평문 하드코딩 제거</span>
+      <span class="file">Define.h</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>문제:</b> 비밀번호가 소스에 박혀 git 히스토리에 영구 기록. <b>조치:</b> 자격증명 매크로 4종(<code>DB_PASS</code> 등)과 미사용 <code>CHOP</code> 매크로 삭제, 외부 설정(config.ini/환경변수) 분리 가이드 주석 추가. (DB 모듈은 현재 빌드 제외 상태였음)</p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">❌ Before</div>
+<pre><span class="kw">#define</span> DB_HOST <span class="st">"127.0.0.1"</span>
+<span class="kw">#define</span> DB_USER <span class="st">"root"</span>
+<span class="kw">#define</span> DB_PASS <span class="st">"rlacodnjs0801!"</span>  <span class="cm">// 평문 노출</span>
+<span class="kw">#define</span> DB_NAME <span class="st">"test"</span></pre>
+        </div>
+        <div class="col after"><div class="hd">✅ After</div>
+<pre><span class="cm">// [보안] DB 자격증명은 소스에 하드코딩하지 않는다.</span>
+<span class="cm">//  - 평문 비밀번호를 커밋하면 git 에 영구히 남는다.</span>
+<span class="cm">//  - config.ini / 환경변수에서 읽어오도록 분리할 것.</span>
+<span class="cm">// (DB 기능은 현재 빌드에서 제외: Mysql.cpp/.h)</span></pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2 -->
+  <details class="issue" data-cat="bug" data-st="done">
+    <summary>
+      <span class="status done">✅ 적용됨</span>
+      <span class="sev crit">CRIT</span>
+      <span class="tag">🐞 버그/UB</span>
+      <span class="ttl">베이스 클래스 가상 소멸자 추가 + 씬 unique_ptr 소유</span>
+      <span class="file">Chap.h · CMng.h · Main.cpp</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>문제:</b> 씬을 <code>Chap*</code>로 다형 처리하는데 소멸자가 <code>virtual</code>이 아니라 delete 시 UB, 게다가 <code>new</code>한 씬을 한 번도 해제하지 않음. <b>조치:</b> 가상 소멸자 + <code>std::unique_ptr</code> 소유로 종료 시 자동 해제.</p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">❌ Before</div>
+<pre><span class="kw">class</span> <span class="ty">Chap</span> {
+    <span class="fn">~Chap</span>() {};            <span class="cm">// virtual 아님</span>
+};
+<span class="ty">Chap</span>* chap[TOTALCHAP];      <span class="cm">// raw</span>
+chap[LOGO] = <span class="kw">new</span> <span class="ty">Logo</span>;     <span class="cm">// 해제 없음</span></pre>
+        </div>
+        <div class="col after"><div class="hd">✅ After</div>
+<pre><span class="kw">class</span> <span class="ty">Chap</span> {
+    <span class="kw">virtual</span> <span class="fn">~Chap</span>() = <span class="kw">default</span>;   <span class="cm">// ★ 가상 소멸자</span>
+};
+std::unique_ptr&lt;<span class="ty">Chap</span>&gt; chap[TOTALCHAP];
+chap[LOGO] = std::<span class="fn">make_unique</span>&lt;<span class="ty">Logo</span>&gt;();
+<span class="cm">// 종료 시 자동 해제</span></pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3 -->
+  <details class="issue" data-cat="security" data-st="done">
+    <summary>
+      <span class="status done">✅ 적용됨</span>
+      <span class="sev crit">CRIT</span>
+      <span class="tag">🔒 보안</span>
+      <span class="ttl">WM_CHAR 고정버퍼 strcat 누적 제거</span>
+      <span class="file">Main.cpp</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>문제:</b> 전역 <code>char buffer[128]</code>에 입력을 <code>strcat</code>으로 누적 — 경계검사 없는 오버플로 패턴. 실제 의도는 'p' 토글 하나뿐. <b>조치:</b> 전역 버퍼 2개 삭제, 한 글자 직접 비교로 단순화.</p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">❌ Before</div>
+<pre><span class="ty">char</span> buffer[<span class="nm">128</span>]; <span class="ty">char</span> ch[<span class="nm">3</span>];
+<span class="kw">case</span> WM_CHAR:
+    ch[<span class="nm">0</span>]=wParam; <span class="fn">strcat</span>(buffer,ch);
+    <span class="kw">if</span>(<span class="fn">strstr</span>(buffer,<span class="st">"p"</span>)){ <span class="cm">/*토글*/</span> }
+    <span class="fn">ZeroMemory</span>(&amp;buffer,<span class="kw">sizeof</span>(buffer));</pre>
+        </div>
+        <div class="col after"><div class="hd">✅ After</div>
+<pre><span class="kw">case</span> WM_CHAR:
+    <span class="kw">if</span> (wParam==<span class="st">'p'</span> || wParam==<span class="st">'P'</span>) {
+        <span class="kw">if</span> (<span class="fn">GetTickCount64</span>()-key.KeyTime&gt;<span class="nm">200</span>){
+            Gmanager.m_Pause = !Gmanager.m_Pause;
+            key.KeyTime = <span class="fn">GetTickCount64</span>();
+        }
+    }
+    <span class="kw">break</span>;</pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 4 -->
+  <details class="issue" data-cat="arch" data-st="done">
+    <summary>
+      <span class="status done">✅ 적용됨</span>
+      <span class="sev high">HIGH</span>
+      <span class="tag">🏛️ 구조</span>
+      <span class="ttl">싱글톤 패턴 통일 — CRTP Singleton&lt;T&gt; 베이스</span>
+      <span class="file">Singleton.h · Camera/Sound/Effect/Time</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>문제:</b> Camera는 <code>new</code>+전역 포인터, Sound/Effect/Time은 각자 함수내 static 으로 싱글톤을 제각각 구현. <b>조치:</b> <code>Singleton&lt;T&gt;</code> CRTP 베이스 신설 → 4개 매니저가 모두 상속(복사/이동 금지, 누수·초기화순서 문제 해소). 기존 <code>CAM-&gt;</code>, <code>SOUND-&gt;</code> 호출부는 그대로 유지.</p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">❌ Before</div>
+<pre><span class="cm">// Camera.cpp — new 기반 + 누수</span>
+<span class="ty">Camera</span>* <span class="ty">Camera</span>::m_pInstance = <span class="nm">nullptr</span>;
+<span class="ty">Camera</span>* <span class="ty">Camera</span>::<span class="fn">GetInstance</span>(){
+  <span class="kw">if</span>(!m_pInstance) m_pInstance=<span class="kw">new</span> <span class="ty">Camera</span>();
+  <span class="kw">return</span> m_pInstance;
+}
+<span class="cm">// Sound/Effect/Time — 또 다른 방식</span>
+<span class="kw">static</span> <span class="ty">Sound</span>* <span class="fn">GetInstance</span>(){<span class="kw">static</span> <span class="ty">Sound</span> i;<span class="kw">return</span> &amp;i;}</pre>
+        </div>
+        <div class="col after"><div class="hd">✅ After</div>
+<pre><span class="cm">// Singleton.h — 단일 베이스</span>
+<span class="kw">template</span>&lt;<span class="kw">class</span> T&gt; <span class="kw">class</span> <span class="ty">Singleton</span> {
+<span class="kw">public</span>:
+  <span class="kw">static</span> T* <span class="fn">GetInstance</span>(){<span class="kw">static</span> T i;<span class="kw">return</span> &amp;i;}
+  <span class="ty">Singleton</span>(<span class="kw">const</span> <span class="ty">Singleton</span>&amp;)=<span class="kw">delete</span>;
+  <span class="ty">Singleton</span>&amp; <span class="kw">operator</span>=(<span class="kw">const</span> <span class="ty">Singleton</span>&amp;)=<span class="kw">delete</span>;
+<span class="kw">protected</span>: <span class="ty">Singleton</span>()=<span class="kw">default</span>;
+};
+<span class="kw">class</span> <span class="ty">Camera</span> : <span class="kw">public</span> <span class="ty">Singleton</span>&lt;<span class="ty">Camera</span>&gt; { ... };</pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 5 -->
+  <details class="issue" data-cat="memory" data-st="done">
+    <summary>
+      <span class="status done">✅ 적용됨</span>
+      <span class="sev high">HIGH</span>
+      <span class="tag">🧹 메모리/RAII</span>
+      <span class="ttl">Sprite 텍스처 RAII화 (ComPtr) — GPU 누수 차단</span>
+      <span class="file">Sprite.h · Sprite.cpp</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>문제:</b> <code>IDirect3DTexture9*</code>를 들고 있으나 소멸자에서 <code>Release()</code>하지 않아 GPU 리소스 누수, 재생성 시에도 누적. <b>조치:</b> <code>Microsoft::WRL::ComPtr</code>로 감싸 소멸·재생성 시 자동 Release. 호출부는 <code>.Get()</code>/<code>.Reset()</code>로 안전화.</p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">❌ Before</div>
+<pre><span class="ty">IDirect3DTexture9</span>* Texture;       <span class="cm">// raw</span>
+<span class="fn">~Sprite</span>(){}                        <span class="cm">// Release 없음</span>
+<span class="fn">D3DXCreateTextureFromFileEx</span>(...,&amp;Texture);
+<span class="kw">if</span>(Texture==<span class="nm">NULL</span>) <span class="kw">return</span>;
+Sprite-&gt;<span class="fn">Draw</span>(Texture, ...);</pre>
+        </div>
+        <div class="col after"><div class="hd">✅ After</div>
+<pre>Microsoft::WRL::ComPtr&lt;<span class="ty">IDirect3DTexture9</span>&gt; Texture;
+<span class="cm">// 소멸자 불필요 — 자동 Release</span>
+<span class="fn">D3DXCreateTextureFromFileEx</span>(...,
+    Texture.<span class="fn">ReleaseAndGetAddressOf</span>());
+<span class="kw">if</span>(!Texture) <span class="kw">return</span>;
+Sprite-&gt;<span class="fn">Draw</span>(Texture.<span class="fn">Get</span>(), ...);</pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 6 -->
+  <details class="issue" data-cat="modern" data-st="done">
+    <summary>
+      <span class="status done">✅ 적용됨</span>
+      <span class="sev mid">MED</span>
+      <span class="tag">✨ 모던 C++</span>
+      <span class="ttl">#define 상수 → constexpr (타입·스코프 안전)</span>
+      <span class="file">Define.h</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>조치:</b> 화면 크기·방향 상수를 <code>constexpr int</code>로 전환(이름은 호출부 호환 위해 유지), <code>#pragma once</code> 추가. <span style="color:var(--muted)">※ 전역 <code>enum</code>→<code>enum class</code> 전환은 <code>LEFT/RIGHT</code> 등 60여 곳에 영향이 커 안정성을 위해 향후 단계로 분리.</span></p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">❌ Before</div>
+<pre><span class="kw">#define</span> SCREEN_WITH <span class="nm">1280</span>
+<span class="kw">#define</span> SCREEN_HEIGHT <span class="nm">800</span>
+<span class="kw">#define</span> LEFT <span class="nm">0</span>
+<span class="kw">#define</span> RIGHT <span class="nm">1</span></pre>
+        </div>
+        <div class="col after"><div class="hd">✅ After</div>
+<pre><span class="kw">#pragma</span> once
+<span class="kw">constexpr int</span> SCREEN_WITH   = <span class="nm">1280</span>;
+<span class="kw">constexpr int</span> SCREEN_HEIGHT = <span class="nm">800</span>;
+<span class="kw">constexpr int</span> LEFT  = <span class="nm">0</span>;
+<span class="kw">constexpr int</span> RIGHT = <span class="nm">1</span>;</pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 7 -->
+  <details class="issue" data-cat="modern" data-st="done">
+    <summary>
+      <span class="status done">✅ 적용됨</span>
+      <span class="sev mid">MED</span>
+      <span class="tag">⚙️ 빌드/인코딩</span>
+      <span class="ttl">인코딩 UTF-8 통일 · C++17 · 빌드 구성 정리</span>
+      <span class="file">전체 · FrameWork.vcxproj</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>문제:</b> 구버전 파일 29개가 CP949(한글 깨짐), 빌드 구성마다 <code>CharacterSet</code> 엇갈림, C++ 표준 미지정, <code>_CRT_SECURE_NO_WARNINGS</code> 중복정의 경고. <b>조치:</b> 전 소스 <b>UTF-8(BOM)</b> 통일(런타임 한글은 BOM 자동인식+시스템 코드페이지로 보존 — <code>/utf-8</code> 강제는 일부러 피함), <code>LanguageStandard=stdcpp17</code>, <code>CharacterSet=MultiByte</code> 통일(코드가 ANSI Win32 API 기반), 중복 매크로 <code>#ifndef</code> 가드.</p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">❌ Before</div>
+<pre><span class="cm">// CMng.h (CP949) — 깨진 주석</span>
+<span class="cm">//Sprite loadimg; // ÀÎ°ÔÀÌ¹ÌÁö</span>
+&lt;CharacterSet&gt;Unicode&lt;/&gt;   <span class="cm">// Release|Win32</span>
+&lt;CharacterSet&gt;MultiByte&lt;/&gt; <span class="cm">// Debug|x64</span>
+<span class="cm">// LanguageStandard 미지정 → C++14</span></pre>
+        </div>
+        <div class="col after"><div class="hd">✅ After</div>
+<pre><span class="cm">// 전 파일 UTF-8(BOM) — 어디서나 한글 정상</span>
+&lt;LanguageStandard&gt;stdcpp17&lt;/&gt;
+&lt;CharacterSet&gt;MultiByte&lt;/&gt;  <span class="cm">// 4개 구성 통일</span>
+<span class="kw">#ifndef</span> _CRT_SECURE_NO_WARNINGS
+<span class="kw">#define</span> _CRT_SECURE_NO_WARNINGS
+<span class="kw">#endif</span></pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 8 -->
+  <details class="issue" data-cat="modern" data-st="done">
+    <summary>
+      <span class="status done">✅ 적용됨</span>
+      <span class="sev mid">LOW</span>
+      <span class="tag">✨ 모던 C++</span>
+      <span class="ttl">죽은 코드(dead code) 정리 · nullptr</span>
+      <span class="file">Main.cpp · Sound.cpp · Camera.cpp</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>조치:</b> Main.cpp 하단의 40여 줄짜리 옛 게임루프 주석 블록과 strstr 설명 주석, 미사용 전역(<code>Sound sound</code>, <code>Camera cam</code>) 삭제, <code>!= NULL</code> 포인터 비교를 truthiness 로 정리. 히스토리는 git 이 보존.</p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">❌ Before</div>
+<pre>return msg.wParam;
+<span class="cm">//while( msg.message != WM_QUIT ) {</span>
+<span class="cm">//  if(PeekMessage(...)) { ... }</span>
+<span class="cm">//  ... 40여 줄 옛 루프 통째로 주석 ...</span>
+<span class="cm">//}</span>
+<span class="ty">Sound</span> sound;  <span class="ty">Camera</span> cam; <span class="cm">// 미사용 전역</span></pre>
+        </div>
+        <div class="col after"><div class="hd">✅ After</div>
+<pre>return msg.wParam;
+<span class="cm">// 살아있는 단 하나의 루프만 유지.</span>
+<span class="cm">// 미사용 전역 삭제 — 싱글톤이 인스턴스 관리.</span></pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- PLAN 1 -->
+  <details class="issue" data-cat="arch" data-st="plan">
+    <summary>
+      <span class="status plan">🔵 향후</span>
+      <span class="sev high">HIGH</span>
+      <span class="tag">🏛️ 구조</span>
+      <span class="ttl">전역 extern 객체 → 싱글톤 통합 (knight·coll·g_Mng 등)</span>
+      <span class="file">전역 전반</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>왜 미루었나(의도적):</b> <code>knight</code>(144회)·<code>coll</code>(47)·<code>g_Mng</code>(51) 등 호출처가 매우 많고, 전역 객체는 <b>프로그램 시작 시점</b>에 생성되는 반면 싱글톤은 <b>최초 접근 시(lazy)</b> 생성되어 초기화 타이밍이 바뀝니다(예: <code>GameManager</code> 생성자가 파일 IO 수행). 런타임 회귀 위험이 있어 별도 단계에서 진행하는 것이 안전합니다.</p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">현재 (혼재)</div>
+<pre><span class="kw">extern</span> <span class="ty">Knight</span> knight;   <span class="cm">// 전역 객체</span>
+<span class="kw">extern</span> <span class="ty">Collider</span> coll;
+<span class="cm">// vs</span>
+<span class="kw">#define</span> CAM Camera::GetInstance(); <span class="cm">// 싱글톤</span></pre>
+        </div>
+        <div class="col after"><div class="hd">제안 (하위호환)</div>
+<pre><span class="kw">class</span> <span class="ty">Knight</span> : <span class="kw">public</span> <span class="ty">Singleton</span>&lt;<span class="ty">Knight</span>&gt; {...};
+<span class="cm">// 호출부 144곳 유지용 호환 참조</span>
+<span class="kw">inline</span> <span class="ty">Knight</span>&amp; knight = *<span class="ty">Knight</span>::<span class="fn">GetInstance</span>();
+<span class="cm">// 생성자의 파일 IO 등 부작용부터 정리 후 전환</span></pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- PLAN 2 -->
+  <details class="issue" data-cat="arch" data-st="plan">
+    <summary>
+      <span class="status plan">🔵 향후</span>
+      <span class="sev high">HIGH</span>
+      <span class="tag">🏛️ 구조</span>
+      <span class="ttl">Pause 상태 일원화 + 이중 타임게이트 제거</span>
+      <span class="file">Main.cpp · Game.cpp</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>관찰된 문제:</b> 'p'키는 <code>Gmanager.m_Pause</code>, ESC는 <code>Game::m_bPaused</code>를 따로 토글 → 두 상태가 어긋남. 또 고정 타임스텝 루프 위에서 <code>Game::Update</code>가 보간계수를 ms처럼 다시 비교(이중 게이트). 게임플레이 동작에 직접 영향이 커 충분한 플레이 테스트와 함께 진행 예정.</p>
+      <div class="cmp">
+        <div class="col before"><div class="hd">현재</div>
+<pre>Gmanager.m_Pause = !Gmanager.m_Pause; <span class="cm">//'p'</span>
+m_bPaused = !m_bPaused;               <span class="cm">//ESC</span>
+<span class="kw">if</span>(<span class="fn">GetTickCount64</span>()-a &gt; frame){...} <span class="cm">//이중</span></pre>
+        </div>
+        <div class="col after"><div class="hd">제안</div>
+<pre><span class="kw">enum class</span> <span class="ty">PlayState</span>{Playing,Paused};
+<span class="kw">void</span> <span class="fn">TogglePause</span>(); <span class="cm">// 단일 진입점</span>
+<span class="kw">void</span> <span class="fn">Update</span>(<span class="ty">double</span> dt){ <span class="cm">// 루프 신뢰</span>
+  <span class="kw">if</span>(state==Paused) <span class="kw">return</span>; ... }</pre>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- PLAN 3 -->
+  <details class="issue" data-cat="modern" data-st="plan">
+    <summary>
+      <span class="status plan">🔵 향후</span>
+      <span class="sev mid">MED</span>
+      <span class="tag">✨ 모던 C++</span>
+      <span class="ttl">C 파일 I/O(fopen/itoa) → fstream / to_string</span>
+      <span class="file">GameManager.cpp</span>
+      <span class="arrow">▶</span>
+    </summary>
+    <div class="body">
+      <p class="why"><b>제안:</b> 세이브 로직의 <code>fopen/fwrite/fclose</code>를 RAII <code>std::ofstream</code>으로, <code>itoa</code>를 <code>std::to_string</code>으로. 현재 세이브/로드 경로가 일부 주석 상태라 기능 정리와 함께 진행 예정.</p>
+    </div>
+  </details>
+
+  </div><!--/issues-->
+
+  <h2 class="section">🧩 디자인 패턴 로드맵
+    <span class="sub">적용된 패턴과, 포트폴리오 가치를 더 높일 다음 단계</span>
+  </h2>
+
+  <div class="pattern">
+    <h3><span class="pat-tag">Singleton (CRTP)</span> 매니저 접근 통일 <span class="st2 done">✅ 적용됨</span></h3>
+    <p><code>Singleton&lt;T&gt;</code> 베이스로 Camera/Sound/EffectManager/TimeManager를 통일. 복사·이동을 <code>delete</code>로 막고, Meyers 싱글톤으로 초기화 순서 문제와 <code>new</code> 누수를 동시에 제거.</p>
+  </div>
+  <div class="pattern">
+    <h3><span class="pat-tag">RAII</span> 리소스 수명 자동화 <span class="st2 done">✅ 적용됨</span></h3>
+    <p>씬은 <code>unique_ptr</code>, GPU 텍스처는 <code>ComPtr</code>로 소유. 소멸·예외·조기 return 어디서든 자동 해제되어 누수가 구조적으로 사라짐.</p>
+  </div>
+  <div class="pattern">
+    <h3><span class="pat-tag">State</span> 씬·게임 상태 머신 <span class="st2 plan">🔵 향후</span></h3>
+    <p>이미 <code>Chap</code>(씬) 추상화가 State 패턴의 씨앗. <code>SceneManager</code>(전환/스택)로 정식화하고 Playing/Paused/Cutscene를 명시적 상태로 표현하면 'p키 vs ESC' 같은 상태 꼬임이 구조적으로 해결.</p>
+  </div>
+  <div class="pattern">
+    <h3><span class="pat-tag">Object Pool</span> 이펙트·적·투사체 풀링 <span class="st2 plan">🔵 향후</span></h3>
+    <p><code>EffectManager</code>가 타격마다 <code>std::list</code>에 생성/삭제 → 전투 중 잦은 할당이 끊김 유발. 고정 크기 풀에서 꺼내 쓰고 반납하면 할당 비용·메모리 변동 제거.</p>
+  </div>
+  <div class="pattern">
+    <h3><span class="pat-tag">Component / Command</span> 엔티티·입력 추상화 <span class="st2 plan">🔵 향후</span></h3>
+    <p><code>Knight/Enemy/Boss</code>의 공통 필드(위치·HP·히트박스·넉백)를 <code>Entity</code> 베이스로 추출. 흩어진 <code>GetAsyncKeyState</code> 입력을 "점프/대시/공격" Command로 추상화하면 키 리매핑·리플레이·테스트가 가능.</p>
+  </div>
+
+  <h2 class="section">🗺️ 적용 로드맵
+    <span class="sub">동작하는 프로젝트를 깨지 않고 단계적으로 — 매 단계 빌드 검증</span>
+  </h2>
+  <div class="road">
+    <div class="step ok"><h4>0. 안전망 &amp; 빌드 현대화 <span style="color:var(--after)">— 완료</span></h4><p>원본 스냅샷 보존(docs/before), 전 파일 UTF-8 통일, C++17/CharacterSet 통일, 중복 매크로 정리. 빌드 오류 0 확인.</p></div>
+    <div class="step ok"><h4>1. 보안·UB 즉시 수정 <span style="color:var(--after)">— 완료</span></h4><p>DB 자격증명 제거, 가상 소멸자, WM_CHAR 버퍼 제거. 가장 위험한 3건 해결.</p></div>
+    <div class="step ok"><h4>2. 소유권 RAII화 <span style="color:var(--after)">— 완료</span></h4><p>씬 <code>unique_ptr</code>, 텍스처 <code>ComPtr</code>, 죽은 코드·미사용 전역 삭제.</p></div>
+    <div class="step ok"><h4>3. 싱글톤 통일 <span style="color:var(--after)">— 완료</span></h4><p>CRTP <code>Singleton&lt;T&gt;</code> 베이스로 4개 매니저 마이그레이션(매크로 호환 유지).</p></div>
+    <div class="step"><h4>4. 패턴 고도화 — 다음 단계</h4><p>전역 extern→싱글톤 통합, Pause 상태 일원화, Object Pool, 입력 Command화, 공통 Entity 추출, fstream 전환.</p></div>
+  </div>
+
+  <h2 class="section">📂 변경된 핵심 파일
+    <span class="sub">적용 전 전체 스냅샷: <a href="before/">docs/before/</a></span>
+  </h2>
+  <div class="files">
+    <div class="f"><code>Singleton.h</code> <span>신규 — CRTP 싱글톤 베이스</span></div>
+    <div class="f"><code>Chap.h</code> <span>가상 소멸자</span></div>
+    <div class="f"><code>CMng.h</code> <span>씬 unique_ptr 소유</span></div>
+    <div class="f"><code>Camera.h/.cpp</code> <span>싱글톤 베이스 상속, new 제거</span></div>
+    <div class="f"><code>Sound.h/.cpp · TimeManager.h · EffectManager.h</code> <span>싱글톤 통일</span></div>
+    <div class="f"><code>Sprite.h/.cpp</code> <span>텍스처 ComPtr RAII</span></div>
+    <div class="f"><code>Define.h</code> <span>DB 자격증명 제거, constexpr, pragma once</span></div>
+    <div class="f"><code>Main.cpp</code> <span>make_unique, WM_CHAR, 죽은 코드 제거</span></div>
+    <div class="f"><code>Include.h</code> <span>매크로 가드, Singleton 포함</span></div>
+    <div class="f"><code>FrameWork.vcxproj</code> <span>C++17, CharacterSet 통일</span></div>
+  </div>
+
+</div>
+
+<footer>
+  FrameWork 게임 프로젝트 코드 업그레이드 리포트 · Direct3D 9 / FMOD ·
+  생성/적용일 2026-06-26 · MSBuild Debug|x64 오류 0 검증<br/>
+  적용 전 원본은 <a href="before/">docs/before/</a>, 적용 후는 <code>FrameWork/</code> 소스에서 확인할 수 있습니다.
+</footer>
+
+<script>
+  const btns = document.querySelectorAll('#filters button');
+  const issues = document.querySelectorAll('#issues .issue');
+  btns.forEach(b=>b.addEventListener('click',()=>{
+    btns.forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const f=b.dataset.f;
+    issues.forEach(it=>{
+      const show = (f==='all') || it.dataset.cat===f || it.dataset.st===f;
+      it.style.display = show ? '' : 'none';
+    });
+  }));
+</script>
+</body>
+</html>

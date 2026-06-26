@@ -1,8 +1,6 @@
 ﻿#include "Include.h"
 
-Sound sound;
-
-
+// 인스턴스는 Singleton<Sound>::GetInstance() (매크로 SOUND) 가 관리한다.
 
 Sound::Sound()
 {

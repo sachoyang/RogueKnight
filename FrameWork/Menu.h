@@ -1,4 +1,4 @@
-#ifndef __Menu_H__
+﻿#ifndef __Menu_H__
 #define __Menu_H__
 
 class Menu : public Chap

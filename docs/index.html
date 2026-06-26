@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FrameWork · 자체 제작 2D 액션 게임 엔진 · 코드 분석 & 포트폴리오</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --border:#2d333b;
+    --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#a371f7;
+    --green:#3fb950; --greenbg:#0f2417; --red:#f85149; --redbg:#2d1416;
+    --orange:#db6d28; --yellow:#d29922;
+    --code:#0b0f15;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Pretendard",-apple-system,"Segoe UI","Malgun Gothic",sans-serif;line-height:1.7;font-size:16px}
+  code,pre,.mono{font-family:"JetBrains Mono","Cascadia Code",Consolas,monospace}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ===== Layout ===== */
+  .shell{display:flex;max-width:1400px;margin:0 auto}
+  nav.toc{position:sticky;top:0;height:100vh;width:268px;flex:0 0 268px;
+    overflow-y:auto;padding:28px 16px 40px;border-right:1px solid var(--border);
+    background:linear-gradient(180deg,#0d1117,#0b0f15)}
+  nav.toc .brand{font-weight:800;font-size:18px;letter-spacing:-.02em;margin:0 8px 4px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  nav.toc .brandsub{color:var(--muted);font-size:12px;margin:0 8px 18px}
+  nav.toc .grp{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:18px 8px 6px;font-weight:700}
+  nav.toc a{display:block;color:var(--muted);padding:6px 10px;border-radius:8px;font-size:13.5px;transition:.12s}
+  nav.toc a:hover{background:var(--panel);color:var(--text);text-decoration:none}
+  nav.toc a.active{background:rgba(88,166,255,.12);color:var(--accent);font-weight:600}
+  main{flex:1;min-width:0;padding:0 0 120px}
+  .menu-btn{display:none}
+
+  /* ===== Hero ===== */
+  header.hero{padding:72px 40px 44px;
+    background:radial-gradient(1200px 460px at 30% -10%,rgba(88,166,255,.16),transparent),
+               radial-gradient(900px 360px at 90% 0%,rgba(163,113,247,.13),transparent)}
+  .hero .kicker{color:var(--accent2);font-weight:700;letter-spacing:.06em;font-size:13px;text-transform:uppercase}
+  .hero h1{font-size:clamp(30px,4.4vw,50px);margin:8px 0 14px;letter-spacing:-.025em;line-height:1.12}
+  .hero h1 .g{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.lead{color:var(--text);max-width:760px;font-size:18px;margin:0 0 8px}
+  .hero p.sub{color:var(--muted);max-width:760px;font-size:15px}
+  .chips{margin-top:26px;display:flex;gap:10px;flex-wrap:wrap}
+  .chip{background:var(--panel);border:1px solid var(--border);border-radius:999px;
+    padding:7px 15px;font-size:13px;color:var(--muted)}
+  .chip b{color:var(--text)}
+
+  .wrap{padding:0 40px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:30px 0 8px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+  .stat .n{font-size:28px;font-weight:800;letter-spacing:-.02em}
+  .stat .l{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .stat .n.b{color:var(--accent)} .stat .n.p{color:var(--accent2)} .stat .n.g{color:var(--green)}
+
+  section{padding:46px 40px;border-top:1px solid var(--border);scroll-margin-top:10px}
+  section:first-of-type{border-top:none}
+  h2.sec{font-size:26px;margin:0 0 6px;letter-spacing:-.02em;display:flex;align-items:center;gap:12px}
+  h2.sec .tag{font-size:12px;font-weight:700;color:#04101f;background:var(--accent);border-radius:7px;padding:3px 9px}
+  h2.sec .tag.star{background:linear-gradient(90deg,var(--accent2),var(--accent))}
+  .lede{color:var(--muted);max-width:820px;margin:0 0 24px;font-size:15.5px}
+  h3{font-size:18px;margin:30px 0 10px;letter-spacing:-.01em}
+  h4{font-size:15px;margin:20px 0 8px;color:var(--accent)}
+  p{max-width:860px}
+  ul,ol{max-width:860px}
+  li{margin:5px 0}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin:16px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:1100px){.grid2,.grid3{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+
+  pre.code{background:var(--code);border:1px solid var(--border);border-radius:12px;
+    padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;margin:14px 0}
+  pre.code .c{color:#6e7681}      /* comment */
+  pre.code .k{color:#ff7b72}      /* keyword */
+  pre.code .t{color:#79c0ff}      /* type */
+  pre.code .s{color:#a5d6ff}      /* string */
+  pre.code .f{color:#d2a8ff}      /* func */
+  pre.code .n{color:#79c0ff}      /* number */
+  pre.code .hl{background:rgba(88,166,255,.10);display:block;margin:0 -18px;padding:0 18px}
+  .filename{font-size:12px;color:var(--muted);margin:14px 0 -8px;display:flex;align-items:center;gap:6px}
+  .filename b{color:var(--text)}
+
+  .pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--border);color:var(--muted);margin:0 4px 4px 0}
+  .pill.g{color:var(--green);border-color:rgba(63,185,80,.4);background:var(--greenbg)}
+  .pill.b{color:var(--accent);border-color:rgba(88,166,255,.4)}
+  .pill.p{color:var(--accent2);border-color:rgba(163,113,247,.4)}
+  .pill.o{color:var(--orange);border-color:rgba(219,109,40,.4)}
+
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);font-weight:600}
+  td code{color:var(--accent);font-size:12.5px}
+
+  .note{border-left:3px solid var(--accent);background:rgba(88,166,255,.06);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:14.5px}
+  .note.p{border-color:var(--accent2);background:rgba(163,113,247,.06)}
+  .note.g{border-color:var(--green);background:rgba(63,185,80,.06)}
+  .note b.lab{color:var(--accent)}
+  .note.p b.lab{color:var(--accent2)} .note.g b.lab{color:var(--green)}
+
+  /* before/after */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:14px 0}
+  .ba > div{padding:14px 16px}
+  .ba .before{background:var(--redbg);border-right:1px solid var(--border)}
+  .ba .after{background:var(--greenbg)}
+  .ba h5{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  .ba .before h5{color:var(--red)} .ba .after h5{color:var(--green)}
+  .ba pre{margin:0;background:transparent;border:none;padding:0;font-size:12.5px;line-height:1.55;overflow-x:auto;white-space:pre-wrap}
+  @media(max-width:1100px){.ba{grid-template-columns:1fr}.ba .before{border-right:none;border-bottom:1px solid var(--border)}}
+
+  /* FSM diagram */
+  .fsm{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0}
+  .node{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--panel);min-width:150px;flex:1}
+  .node .nm{font-weight:700;font-size:14px;color:var(--accent)}
+  .node .ds{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .node.attack .nm{color:var(--red)} .node.special .nm{color:var(--accent2)} .node.idle .nm{color:var(--yellow)}
+
+  /* grid viz */
+  .mapgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;max-width:360px;margin:16px 0;aspect-ratio:1}
+  .mapgrid .cell{border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;color:var(--muted);background:var(--code);aspect-ratio:1}
+  .mapgrid .cell.r{background:rgba(88,166,255,.18);color:var(--accent);border-color:var(--accent)}
+  .mapgrid .cell.start{background:rgba(63,185,80,.2);color:var(--green);border-color:var(--green)}
+  .mapgrid .cell.boss{background:rgba(248,81,73,.2);color:var(--red);border-color:var(--red)}
+  .mapgrid .cell.wait{background:rgba(210,153,34,.2);color:var(--yellow);border-color:var(--yellow)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+  details.qa{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin:12px 0;overflow:hidden}
+  details.qa summary{cursor:pointer;padding:16px 20px;font-weight:600;font-size:15px;list-style:none;display:flex;gap:10px;align-items:flex-start}
+  details.qa summary::-webkit-details-marker{display:none}
+  details.qa summary .q{color:var(--accent2);font-weight:800;flex:0 0 auto}
+  details.qa[open] summary{border-bottom:1px solid var(--border)}
+  details.qa .body{padding:16px 20px;color:#c9d4e0;font-size:14.5px}
+  details.qa .body p{margin:0 0 10px}
+
+  footer{padding:40px;color:var(--muted);font-size:13px;border-top:1px solid var(--border);text-align:center}
+  .toplink{position:fixed;right:22px;bottom:22px;background:var(--accent);color:#04101f;border-radius:50%;
+    width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+
+  @media(max-width:980px){
+    nav.toc{position:fixed;left:0;top:0;transform:translateX(-100%);z-index:50;transition:.2s;box-shadow:0 0 40px rgba(0,0,0,.6)}
+    nav.toc.open{transform:none}
+    .menu-btn{display:flex;position:fixed;top:14px;left:14px;z-index:60;background:var(--panel);border:1px solid var(--border);
+      color:var(--text);border-radius:10px;width:42px;height:42px;align-items:center;justify-content:center;font-size:20px;cursor:pointer}
+    header.hero{padding-top:64px}
+    .wrap,section,header.hero{padding-left:20px;padding-right:20px}
+  }
+</style>
+</head>
+<body>
+<button class="menu-btn" onclick="document.querySelector('nav.toc').classList.toggle('open')">☰</button>
+<div class="shell">
+
+<!-- ===================== TOC ===================== -->
+<nav class="toc" id="toc">
+  <div class="brand">⚔ FrameWork Engine</div>
+  <div class="brandsub">2D Action Platformer · 코드 분석 리포트</div>
+
+  <div class="grp">개요</div>
+  <a href="#overview">프로젝트 개요</a>
+  <a href="#architecture">시스템 아키텍처</a>
+  <a href="#patterns">디자인 패턴 총정리</a>
+
+  <div class="grp">엔진 코어 (직접 제작)</div>
+  <a href="#loop">게임 루프 (Fixed Timestep)</a>
+  <a href="#singleton">CRTP 싱글톤 베이스</a>
+  <a href="#scene">씬 관리 (다형성)</a>
+  <a href="#render">렌더링 &amp; RAII</a>
+  <a href="#camera">카메라 시스템</a>
+  <a href="#physics">충돌 / 물리 엔진</a>
+  <a href="#timemgr">TimeManager (게임필)</a>
+
+  <div class="grp">핵심 로직</div>
+  <a href="#mapgen">★ 절차적 맵 생성</a>
+  <a href="#capping">★ 도어 소켓 캡핑</a>
+  <a href="#corpse">★ 시체 레지스트리</a>
+  <a href="#bossfsm">★ 보스 FSM</a>
+  <a href="#phase">다중 보스 페이즈</a>
+  <a href="#audio">상태 기반 사운드</a>
+
+  <div class="grp">정리</div>
+  <a href="#appeal">면접 어필 포인트</a>
+  <a href="#qa">예상 질문 &amp; 답변</a>
+  <a href="#quality">코드 품질 개선</a>
+  <a href="upgrade-report.html">→ 업그레이드 리포트(별도)</a>
+</nav>
+
+<main>
+<!-- ===================== HERO ===================== -->
+<header class="hero">
+  <div class="kicker">Game Client Programmer · Portfolio</div>
+  <h1>상용 엔진 없이 <span class="g">바닥부터 만든</span><br>2D 횡스크롤 액션 게임 엔진</h1>
+  <p class="lead">C++ · WinAPI · DirectX 9 만으로 게임 루프·렌더러·물리·씬 시스템을 직접 설계하고,
+    그 위에 <b>절차적 맵 생성</b>과 <b>FSM 기반 보스 AI</b>를 올린 <i>Hollow Knight</i> 스타일 프로젝트.</p>
+  <p class="sub">이 문서는 면접·복습용으로 전체 코드를 <b>로직 단위</b>로 분해해 정리한 기술 분석 리포트입니다.
+    각 항목은 "왜 이렇게 설계했는가 → 어떻게 구현했는가 → 무엇을 어필할 수 있는가" 순서로 읽도록 구성했습니다.</p>
+  <div class="chips">
+    <span class="chip"><b>Language</b> C++17 (STL)</span>
+    <span class="chip"><b>Graphics</b> DirectX 9 · D3DXSprite</span>
+    <span class="chip"><b>Audio</b> FMOD (Custom Wrapper)</span>
+    <span class="chip"><b>Platform</b> Win32 API</span>
+    <span class="chip"><b>IDE</b> Visual Studio 2022</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="n b">~16K</div><div class="l">라인 (엔진+게임 로직)</div></div>
+    <div class="stat"><div class="n p">6×6</div><div class="l">절차적 맵 생성 그리드</div></div>
+    <div class="stat"><div class="n g">9-State</div><div class="l">보스 유한 상태 머신</div></div>
+    <div class="stat"><div class="n">7+</div><div class="l">적용 디자인 패턴</div></div>
+  </div>
+</div>
+
+<!-- ===================== OVERVIEW ===================== -->
+<section id="overview">
+  <h2 class="sec">프로젝트 개요 <span class="tag">WHY</span></h2>
+  <p class="lede">"엔진을 쓸 줄 아는 사람"이 아니라 "엔진이 내부에서 어떻게 도는지 아는 사람"이 되기 위해,
+    Unity·Unreal을 의도적으로 배제하고 게임을 구성하는 모든 시스템을 직접 구현했습니다.</p>
+
+  <div class="grid3">
+    <div class="card">
+      <h4>무엇을 만들었나</h4>
+      <p style="font-size:14px;color:#c9d4e0">횡스크롤 액션 플랫포머. 매 플레이마다 던전 구조가 바뀌는 로그라이크 요소와,
+        단순 추적이 아닌 상황 판단형 보스 3형제 전투가 핵심.</p>
+    </div>
+    <div class="card">
+      <h4>왜 직접 만들었나</h4>
+      <p style="font-size:14px;color:#c9d4e0">게임 루프·델타타임·더블버퍼·스프라이트 배칭·충돌 처리 등
+        엔진이 가려주던 레이어를 직접 다루며 <b>저수준 동작 원리</b>를 체득하기 위함.</p>
+    </div>
+    <div class="card">
+      <h4>무엇을 증명하나</h4>
+      <p style="font-size:14px;color:#c9d4e0">C++ 메모리/수명 관리, 자료구조 선택, 알고리즘 설계, 디자인 패턴 적용,
+        그리고 <b>게임필(손맛)</b>까지 신경 쓰는 클라이언트 프로그래머의 역량.</p>
+    </div>
+  </div>
+
+  <h3>핵심 기능 한눈에 보기</h3>
+  <table>
+    <tr><th>영역</th><th>구현 내용</th><th>관련 파일</th></tr>
+    <tr><td>코어 엔진</td><td>고정 타임스텝 게임 루프 + 프레임 스킵 + 보간</td><td><code>Main.cpp</code></td></tr>
+    <tr><td>씬 시스템</td><td>추상 인터페이스 + 다형성 + <code>unique_ptr</code> 소유</td><td><code>Chap.h / CMng.h</code></td></tr>
+    <tr><td>렌더링</td><td><code>ID3DXSprite</code> 래퍼, ComPtr RAII, 회전/피벗/아틀라스</td><td><code>Sprite.cpp</code></td></tr>
+    <tr><td>물리/충돌</td><td>AABB, X·Y축 분리 해석, 착지 보정(떨림 제거)</td><td><code>Knight.cpp / Collider.cpp</code></td></tr>
+    <tr><td>맵 생성</td><td>프리팹 기반 6×6 절차 생성 + 동적 벽 캡핑</td><td><code>MapManager.cpp</code></td></tr>
+    <tr><td>AI</td><td>9-state 보스 FSM + 예측 포물선 + 다중 페이즈</td><td><code>Boss.cpp</code></td></tr>
+    <tr><td>게임필</td><td>히트스톱 · 타임슬로우 · 카메라 셰이크 · 포고점프</td><td><code>TimeManager.cpp / Camera.cpp</code></td></tr>
+    <tr><td>사운드</td><td>FMOD 래핑, 상태기반 재생, 사망 컬링, 루프 복구</td><td><code>Sound.cpp / FmodSound.cpp</code></td></tr>
+  </table>
+</section>
+
+<!-- ===================== ARCHITECTURE ===================== -->
+<section id="architecture">
+  <h2 class="sec">시스템 아키텍처 <span class="tag">STRUCTURE</span></h2>
+  <p class="lede">의존성이 한 방향으로만 흐르도록 <code>Include.h</code>에서 모듈을 5계층으로 명시적으로 분리했습니다.
+    하위 계층(코어 도구)은 상위 계층(게임 로직)을 모르고, 상위가 하위를 사용합니다.</p>
+
+  <pre class="code"><span class="c">// Include.h — 의존성 레이어링 (실제 #include 순서가 곧 아키텍처)</span>
+<span class="c">// 1단계: 코어 도구    </span> Singleton · Camera · Key · Sound · Collider
+<span class="c">// 2단계: 게임 엔티티  </span> Enemy · Boss · Knight
+<span class="c">// 3단계: 매니저 시스템</span> MapManager · UIManager · TimeManager · EffectManager
+<span class="c">// 4단계: 최상위 루프  </span> GameManager · CMng
+<span class="c">// 5단계: 씬 &amp; 메인    </span> Logo · Menu · Game · Over · Ending → Main</pre>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>실행 흐름 (런타임)</h4>
+      <pre class="code"><span class="f">WinMain</span>
+ ├─ 윈도우 생성 / D3D 디바이스 초기화
+ ├─ 씬 5개 <span class="f">make_unique</span> 후 Init()
+ └─ <span class="k">while</span>(!WM_QUIT)         <span class="c">// 메인 루프</span>
+      ├─ PeekMessage 처리 (논블로킹)
+      ├─ Fixed-step Update(보간)   <span class="c">// 60 TPS</span>
+      └─ BeginScene → Draw → Present</pre>
+    </div>
+    <div class="card">
+      <h4>씬 상태 전이</h4>
+      <pre class="code">LOGO ──▶ MENU ──▶ <span class="t">GAME</span> ──┬──▶ OVER  <span class="c">(사망)</span>
+                         └──▶ ENDING <span class="c">(클리어)</span>
+   <span class="t">GAME</span> 내부:  Pause 오버레이가
+   게임 로직만 멈추고 UI는 가동</pre>
+    </div>
+  </div>
+  <div class="note"><b class="lab">설계 의도 ▸</b>
+    씬을 <code>Chap*</code> 배열로 다형 관리하고 현재 인덱스(<code>n_Chap</code>)만 바꿔 전환하므로,
+    씬 추가 시 메인 루프를 건드릴 필요가 없습니다. (개방-폐쇄 원칙)</div>
+</section>
+
+<!-- ===================== PATTERNS ===================== -->
+<section id="patterns">
+  <h2 class="sec">디자인 패턴 총정리 <span class="tag">PATTERNS</span></h2>
+  <p class="lede">"패턴을 위한 패턴"이 아니라, 각 문제를 풀기 위해 의도적으로 선택한 것들입니다.
+    면접에서 "왜 그 패턴을 썼는가"에 답할 수 있도록 <b>문제 → 해법</b>으로 정리했습니다.</p>
+
+  <table>
+    <tr><th>패턴</th><th>해결한 문제</th><th>구현 위치</th></tr>
+    <tr><td><b>Singleton (CRTP/Meyers)</b></td><td>매니저의 전역 단일 접근 + 초기화 순서·누수 문제</td><td><code>Singleton&lt;T&gt;</code></td></tr>
+    <tr><td><b>State / FSM</b></td><td>보스의 복잡한 행동 분기를 상태별로 격리</td><td><code>BossEnemy::Update</code></td></tr>
+    <tr><td><b>Template Method</b></td><td>씬·적의 공통 생명주기(Init/Update/Draw) 강제</td><td><code>Chap · Enemy</code></td></tr>
+    <tr><td><b>Object Pool</b></td><td>타격 이펙트 잦은 생성/소멸의 단편화·비용</td><td><code>EffectManager</code></td></tr>
+    <tr><td><b>Prototype / Prefab</b></td><td>방 도면을 복제해 맵 인스턴스 대량 생성</td><td><code>RoomPrefab</code></td></tr>
+    <tr><td><b>Facade</b></td><td>FMOD 저수준 API를 게임 의미 단위로 감춤</td><td><code>Sound</code> 래퍼</td></tr>
+    <tr><td><b>Strategy (다형성)</b></td><td>지상몹/비행몹/보스가 같은 인터페이스로 다른 행동</td><td><code>Enemy</code> 파생</td></tr>
+  </table>
+  <div class="note p"><b class="lab">면접 포인트 ▸</b>
+    패턴 이름을 나열하기보다 <i>"이 코드가 없었으면 어떤 문제가 생겼을지"</i>를 함께 말하면
+    설계 사고력을 보여줄 수 있습니다. 아래 각 섹션에 그 근거를 코드와 함께 적어두었습니다.</div>
+</section>
+
+<!-- ===================== GAME LOOP ===================== -->
+<section id="loop">
+  <h2 class="sec">게임 루프 — Fixed Timestep <span class="tag">ENGINE</span></h2>
+  <p class="lede">게임 엔진의 심장. PC 사양에 따라 게임 속도가 달라지지 않도록,
+    <b>물리/로직은 고정 60틱</b>으로 돌리고 <b>렌더링은 가능한 만큼 빠르게</b> 돌리는 구조를 직접 구현했습니다.</p>
+
+  <div class="filename">📄 <b>Main.cpp</b> — WinMain 메인 루프</div>
+  <pre class="code"><span class="k">const int</span> TICKS_PER_SECOND = <span class="n">60</span>;
+<span class="k">const int</span> SKIP_TICKS = <span class="n">1000</span> / TICKS_PER_SECOND;  <span class="c">// 한 틱당 16.6ms</span>
+<span class="k">const int</span> MAX_FRAMESKIP = <span class="n">5</span>;
+
+<span class="k">while</span> (msg.message != WM_QUIT) {
+  <span class="c">// 1) 메시지는 논블로킹으로 모두 비움 (게임이 멈추지 않게)</span>
+  <span class="k">while</span> (<span class="f">PeekMessage</span>(&amp;msg, NULL, 0, 0, PM_REMOVE)) { ...
+      g_Mng.chap[g_Mng.n_Chap]-><span class="f">OnMessage</span>(&amp;msg); }
+
+<span class="hl">  <span class="c">// 2) 고정 타임스텝: 밀린 틱만큼 Update 를 따라잡되, 최대 5번까지만</span></span>
+<span class="hl">  <span class="k">while</span> (<span class="f">GetTickCount64</span>() > next_game_tick &amp;&amp; loops < MAX_FRAMESKIP) {</span>
+<span class="hl">    interpolation = float(GetTickCount64() + SKIP_TICKS - next_game_tick) / SKIP_TICKS;</span>
+<span class="hl">    <span class="k">if</span> (Gmanager.m_Pause == <span class="k">false</span>)</span>
+<span class="hl">      g_Mng.chap[g_Mng.n_Chap]-><span class="f">Update</span>(interpolation);</span>
+<span class="hl">    next_game_tick += SKIP_TICKS;  loops++;</span>
+<span class="hl">  }</span>
+  <span class="c">// 3) 렌더링은 매 루프마다 (프레임은 가능한 만큼)</span>
+  Device9-><span class="f">BeginScene</span>();  Device9-><span class="f">Clear</span>(...);
+  g_Mng.chap[g_Mng.n_Chap]-><span class="f">Draw</span>();
+  Device9-><span class="f">EndScene</span>();  Device9-><span class="f">Present</span>(...);
+}</pre>
+
+  <div class="grid3">
+    <div class="card"><h4>① PeekMessage</h4><p style="font-size:13.5px;color:#c9d4e0">GetMessage(블로킹)가 아닌 PeekMessage로 입력을 비워, 입력이 없어도 게임이 계속 진행됩니다.</p></div>
+    <div class="card"><h4>② Frame Skip</h4><p style="font-size:13.5px;color:#c9d4e0">처리가 밀리면 Update를 여러 번 따라잡되 <code>MAX_FRAMESKIP=5</code>로 상한을 둬 "죽음의 나선" 방지.</p></div>
+    <div class="card"><h4>③ Interpolation</h4><p style="font-size:13.5px;color:#c9d4e0">틱 사이 보간값을 계산해 렌더 단계에 넘겨 부드러운 화면을 확보.</p></div>
+  </div>
+  <div class="note g"><b class="lab">왜 중요한가 ▸</b>
+    "왜 게임 루프에서 로직과 렌더를 분리하나요?"는 단골 질문입니다.
+    <b>가변 델타타임의 물리 불안정성</b>과 <b>저사양에서의 게임 속도 저하</b>를 동시에 막는 정석 구조라고 답할 수 있습니다.</div>
+</section>
+
+<!-- ===================== SINGLETON ===================== -->
+<section id="singleton">
+  <h2 class="sec">CRTP 싱글톤 베이스 <span class="tag">ENGINE</span></h2>
+  <p class="lede">초기에는 매니저마다 <code>전역 포인터 + new</code> 또는 <code>함수 내 static</code>이 제각각이었습니다.
+    이를 <b>CRTP(Curiously Recurring Template Pattern) 기반 Meyers 싱글톤</b> 하나로 통일했습니다.</p>
+
+  <div class="filename">📄 <b>Singleton.h</b></div>
+  <pre class="code"><span class="k">template</span> &lt;<span class="k">class</span> <span class="t">T</span>&gt;
+<span class="k">class</span> <span class="t">Singleton</span> {
+<span class="k">public</span>:
+  <span class="k">static</span> <span class="t">T</span>* <span class="f">GetInstance</span>() {
+<span class="hl">    <span class="k">static</span> <span class="t">T</span> instance;   <span class="c">// 최초 호출 시 1회 생성, 종료 시 자동 소멸</span></span>
+    <span class="k">return</span> &amp;instance;
+  }
+  Singleton(<span class="k">const</span> Singleton&amp;)            = <span class="k">delete</span>;  <span class="c">// 복사 금지</span>
+  Singleton&amp; <span class="k">operator</span>=(<span class="k">const</span> Singleton&amp;) = <span class="k">delete</span>;
+<span class="k">protected</span>:
+  Singleton()  = <span class="k">default</span>;
+  ~Singleton() = <span class="k">default</span>;
+};
+<span class="c">// 사용:  class Camera : public Singleton&lt;Camera&gt; { friend class Singleton&lt;Camera&gt;; ... };</span>
+<span class="c">//        #define CAM Camera::GetInstance()   →   CAM->Update();</span></pre>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>이 설계가 해결한 것</h4>
+      <ul style="font-size:14px;color:#c9d4e0;margin:0;padding-left:18px">
+        <li><b>Static init order fiasco</b> — 전역 객체 간 초기화 순서 의존 제거 (지연 초기화)</li>
+        <li><b>메모리 누수</b> — <code>new</code> 없이 지역 static → 프로그램 종료 시 자동 소멸</li>
+        <li><b>스레드 안전</b> — C++11 이후 함수 내 static의 최초 1회 초기화는 표준 보장</li>
+        <li><b>일관성</b> — Camera/Sound/TimeManager/EffectManager가 동일 규약 사용</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>호환을 위한 선택</h4>
+      <p style="font-size:14px;color:#c9d4e0">기존 호출부가 <code>CAM-></code>, <code>SOUND-></code>처럼 포인터(<code>-></code>)를 쓰고 있어,
+        리팩터링 비용을 줄이려고 <b>참조가 아닌 포인터를 반환</b>하도록 의도적으로 설계했습니다.
+        대규모 코드베이스에서 인터페이스 호환을 지키는 실전 감각을 보여주는 대목입니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SCENE ===================== -->
+<section id="scene">
+  <h2 class="sec">씬 관리 — 추상 인터페이스 + 다형성 <span class="tag">ENGINE</span></h2>
+  <p class="lede">모든 씬은 <code>Chap</code> 순수 가상 인터페이스를 구현하고, <code>unique_ptr&lt;Chap&gt;</code> 배열로 소유됩니다.
+    수명 관리를 스마트 포인터에 위임해 수동 <code>delete</code>를 제거했습니다.</p>
+
+  <div class="ba">
+    <div class="before">
+      <h5>리스크 (만약 raw 였다면)</h5>
+      <pre>Chap* chap[TOTALCHAP];
+// new Logo(); ... 어딘가서 delete 누락 가능
+// 기반 포인터 delete 시 ~파생() 미호출 → 누수/UB</pre>
+    </div>
+    <div class="after">
+      <h5>현재 구현</h5>
+      <pre>std::unique_ptr&lt;Chap&gt; chap[TOTALCHAP];
+chap[GAME] = std::make_unique&lt;Game&gt;();
+// 종료 시 자동 해제
+class Chap { virtual ~Chap() = default; ... }; // ★가상 소멸자</pre>
+    </div>
+  </div>
+
+  <div class="filename">📄 <b>Chap.h</b> — 모든 씬의 공통 계약</div>
+  <pre class="code"><span class="k">class</span> <span class="t">Chap</span> {
+<span class="k">public</span>:
+  <span class="k">virtual</span> ~Chap() = <span class="k">default</span>;          <span class="c">// ★ 기반 포인터 delete 안전 보장</span>
+  <span class="k">virtual void</span> <span class="f">Init</span>() = <span class="n">0</span>;
+  <span class="k">virtual void</span> <span class="f">Update</span>(<span class="k">double</span> frame) = <span class="n">0</span>;
+  <span class="k">virtual void</span> <span class="f">Draw</span>() = <span class="n">0</span>;
+  <span class="k">virtual void</span> <span class="f">OnMessage</span>(<span class="t">MSG</span>* msg) = <span class="n">0</span>;  <span class="c">// 윈도우 메시지 포워딩</span>
+};</pre>
+  <div class="note"><b class="lab">Template Method ▸</b>
+    메인 루프는 구체 씬을 전혀 모른 채 <code>Init/Update/Draw/OnMessage</code>만 호출합니다.
+    새 씬을 추가해도 루프 코드는 0줄 수정 — 인터페이스 기반 설계의 이점입니다.</div>
+</section>
+
+<!-- ===================== RENDER ===================== -->
+<section id="render">
+  <h2 class="sec">렌더링 &amp; RAII <span class="tag">ENGINE</span></h2>
+  <p class="lede"><code>ID3DXSprite</code>를 감싼 <code>Sprite</code> 클래스로 2D 출력을 추상화했습니다.
+    GPU 텍스처 수명은 <code>Microsoft::WRL::ComPtr</code>(RAII)로 관리해 누수를 원천 차단했습니다.</p>
+
+  <div class="ba">
+    <div class="before">
+      <h5>Before — raw COM 포인터</h5>
+      <pre>IDirect3DTexture9* Texture;
+// 소멸자에서 Release() 누락 → GPU 텍스처 누수
+// 재로드 시 기존 텍스처 안 풀고 덮어씀</pre>
+    </div>
+    <div class="after">
+      <h5>After — ComPtr RAII</h5>
+      <pre>Microsoft::WRL::ComPtr&lt;IDirect3DTexture9&gt; Texture;
+// 소멸/재생성 시 자동 Release()
+...Texture.ReleaseAndGetAddressOf());
+if (FAILED(hr)) { Texture.Reset(); return false; } // 튕김 방지</pre>
+    </div>
+  </div>
+
+  <h3>렌더 API 오버로드 (용도별 분리)</h3>
+  <table>
+    <tr><th>함수</th><th>용도</th></tr>
+    <tr><td><code>Draw(x, y)</code></td><td>좌상단 기준 단순 출력</td></tr>
+    <tr><td><code>Draw(dx,dy, sx,sy,sw,sh)</code></td><td>텍스처 아틀라스에서 영역(RECT) 잘라 출력</td></tr>
+    <tr><td><code>Render(x,y, radian, sx,sy, pivotMode)</code></td><td>회전·확대·<b>좌우반전(sx=-1)</b>, 피벗(좌상단/중앙) 선택</td></tr>
+    <tr><td><code>SetColor(r,g,b,a)</code></td><td>틴트/페이드용 알파·컬러 변조</td></tr>
+  </table>
+  <div class="note"><b class="lab">2D 회전의 핵심 ▸</b>
+    <code>Scale × RotationZ × Translation</code> 행렬을 합성해 <code>SetTransform</code>으로 적용하고,
+    출력 후 반드시 <b>단위 행렬로 복원</b>해 다음 스프라이트에 변환이 새지 않게 합니다.
+    피벗을 텍스처 중앙으로 두면 제자리 회전이 가능합니다.</div>
+</section>
+
+<!-- ===================== CAMERA ===================== -->
+<section id="camera">
+  <h2 class="sec">카메라 시스템 <span class="tag">ENGINE</span></h2>
+  <p class="lede">플레이어를 추적하되 맵 밖이 보이지 않도록 <b>클램핑</b>하고,
+    타격감을 위한 <b>스크린 셰이크</b>를 내장했습니다. 모든 렌더는 카메라 좌표를 빼서 월드→스크린 변환합니다.</p>
+
+  <div class="filename">📄 <b>Camera.cpp</b> — Update()</div>
+  <pre class="code"><span class="c">// 1) 타깃(플레이어)을 화면 정중앙에</span>
+camPos.posX = target->x - SCREEN_WITH  / <span class="n">2.0f</span>;
+camPos.posY = target->y - SCREEN_HEIGHT / <span class="n">2.0f</span>;
+<span class="c">// 2) 맵 경계 밖으로 못 나가게 Clamping</span>
+<span class="k">if</span> (camPos.posX < <span class="n">0</span>) camPos.posX = <span class="n">0</span>;
+<span class="k">if</span> (camPos.posX > mapWidth - SCREEN_WITH) camPos.posX = mapWidth - SCREEN_WITH;
+<span class="c">// 3) 셰이크: 종료 시각 전이면 랜덤 오프셋 가산 (강도 비례)</span>
+<span class="k">if</span> (<span class="f">GetTickCount</span>() < m_ShakeEndTime) {
+  camPos.posX += ((rand()%200)-100)/<span class="n">100.0f</span> * m_ShakeIntensity;
+  camPos.posY += ((rand()%200)-100)/<span class="n">100.0f</span> * m_ShakeIntensity;
+}</pre>
+  <p style="font-size:14px;color:#c9d4e0"><span class="pill b">CAM->Shake(20.0f, 1000)</span> 보스 포효 시 1초간 강도 20 흔들림 ·
+    <span class="pill b">Shake(8.0f, 100)</span> 일반 타격 시 짧고 약하게. 강도·지속을 호출부에서 조절해 이벤트별 손맛을 차등화했습니다.</p>
+</section>
+
+<!-- ===================== PHYSICS ===================== -->
+<section id="physics">
+  <h2 class="sec">충돌 / 물리 엔진 <span class="tag">ENGINE</span></h2>
+  <p class="lede">픽셀 단위 플랫포머 물리를 직접 구현했습니다. 핵심은 <b>AABB</b> 충돌 +
+    <b>X축·Y축 분리 해석</b> + <b>착지 좌표 보정</b>으로 떨림·끼임 없는 이동을 만드는 것입니다.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>① X축 → Y축 분리 해석</h4>
+      <p style="font-size:14px;color:#c9d4e0">수평 이동·충돌을 먼저 끝낸 뒤 수직(중력·점프)을 따로 처리합니다.
+        한 번에 처리하면 모서리에서 끼이거나 벽을 타고 오르는 버그가 생기기 때문입니다.</p>
+      <pre class="code"><span class="c">// 수평 충돌 시 위/아래 10px 줄여 검사</span>
+wallCheckRect.top += <span class="n">10</span>; wallCheckRect.bottom -= <span class="n">10</span>;
+<span class="c">// 바닥 1px 박힘으로 '벽'으로 오인하는 것 방지</span></pre>
+    </div>
+    <div class="card">
+      <h4>② 착지 떨림(jitter) 제거</h4>
+      <p style="font-size:14px;color:#c9d4e0">착지 시 캐릭터 Y를 바닥 윗면에 <b>강제 스냅 +1.0f</b> 보정.
+        매 프레임 "떨어졌다↔올라왔다"를 반복하는 진동을 없앱니다.</p>
+      <pre class="code"><span class="k">if</span> (gravity >= <span class="n">0</span> &amp;&amp; (m_rc.bottom-<span class="n">30</span>) < wall.top) {
+  grounded = <span class="k">true</span>; canAirDash = <span class="k">true</span>; gravity = <span class="n">0</span>;
+  pos.y = wall.top - (imgH-<span class="n">70</span>) + <span class="n">1.0f</span>; <span class="c">// 떨림 방지</span>
+}</pre>
+    </div>
+  </div>
+
+  <h3>충돌 판정 — IntersectRect (AABB)</h3>
+  <pre class="code"><span class="c">// 기사 공격박스 vs 적 몸체 → 교집합으로 타격 + 이펙트 중심 계산</span>
+<span class="k">if</span> (knight.isAttacking &amp;&amp; <span class="f">IntersectRect</span>(&amp;temp, &amp;knight.attackBox, &amp;e->m_rc)) {
+  e-><span class="f">TakeDamage</span>(<span class="n">1</span>, knight.dir==1 ? -1 : 1);     <span class="c">// 때린 방향으로 넉백</span>
+  TIMEMGR-><span class="f">SetHitStop</span>(<span class="n">40</span>);  CAM-><span class="f">Shake</span>(<span class="n">8.0f</span>,<span class="n">100</span>);  <span class="c">// 손맛</span>
+  <span class="k">float</span> hitX = (temp.left+temp.right)/<span class="n">2.0f</span>;        <span class="c">// 교집합 중심에 타격 이펙트</span>
+}</pre>
+  <div class="note g"><b class="lab">디버그 시각화 ▸</b>
+    <code>/</code> 키로 디버그 모드를 토글하면 <code>DrawPrimitiveUP(D3DPT_LINESTRIP)</code>로
+    모든 콜라이더를 초록 박스로 그립니다. 텍스처를 끄고 순수 라인만 그려 충돌 박스를 눈으로 검증할 수 있게 했습니다.</div>
+
+  <h4>포고 점프(Pogo) — 게임필 디테일</h4>
+  <p style="font-size:14px;color:#c9d4e0">아래 방향 공격(<code>↓+X</code>)이 적/오브젝트에 맞으면 중력을 <code>-13.0f</code>로 꺾어 위로 튕깁니다.
+    Hollow Knight의 핵심 무브를 재현하면서, 끼임 방지를 위해 착지 판정을 강제로 풀고 5px 띄우는 보정까지 넣었습니다.</p>
+</section>
+
+<!-- ===================== TIMEMGR ===================== -->
+<section id="timemgr">
+  <h2 class="sec">TimeManager — 게임필(손맛) 엔진 <span class="tag">ENGINE</span></h2>
+  <p class="lede">"때리는 느낌"을 코드로 만드는 시스템. <b>히트스톱</b>(타격 순간 정지)과
+    <b>타임슬로우</b>(클리어 슬로우모션)를 시간 축에서 통합 제어합니다. 싱글톤으로 어디서든 호출.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>히트스톱 (Hit-Stop)</h4>
+      <p style="font-size:14px;color:#c9d4e0">타격 순간 게임 전체를 수십 ms 멈춰 임팩트를 줍니다.
+        때릴 때 40ms, 맞을 때 150ms로 차등. <b>더 긴 정지를 짧은 것이 덮어쓰지 않도록</b> 잔여시간을 비교하는 가드를 넣었습니다.</p>
+      <pre class="code"><span class="k">void</span> <span class="f">SetHitStop</span>(DWORD dur){
+  <span class="k">if</span>(m_HitStopDuration>0){ <span class="c">// 진행 중이면</span>
+    DWORD remain = ...;
+    <span class="k">if</span>(dur <= remain) <span class="k">return</span>; <span class="c">// 더 길면 무시</span>
+  } ...
+}</pre>
+    </div>
+    <div class="card">
+      <h4>타임슬로우 (Time-Slow)</h4>
+      <p style="font-size:14px;color:#c9d4e0">보스 전멸 순간 3초간 <code>0.3배</code> 슬로우모션.
+        <code>TimeAccumulator</code>에 배율을 누적해 1.0을 넘을 때만 한 틱 진행시키는 방식으로 "부분 속도"를 구현했습니다.</p>
+      <pre class="code"><span class="k">bool</span> <span class="f">IsTimeStopped</span>(){
+  m_TimeAccumulator += m_GlobalTimeScale; <span class="c">// 0.3씩</span>
+  <span class="k">if</span>(m_TimeAccumulator < <span class="n">1.0f</span>) <span class="k">return true</span>;
+  m_TimeAccumulator -= <span class="n">1.0f</span>; <span class="k">return false</span>;
+}</pre>
+    </div>
+  </div>
+  <div class="note p"><b class="lab">게임 루프와의 연결 ▸</b>
+    <code>Game::Update</code>는 매 프레임 <code>TIMEMGR->IsTimeStopped()</code>를 물어보고,
+    멈춤이면 knight/map/effect 등 <b>"시간의 영향을 받는 오브젝트"의 Update만 건너뜁니다.</b>
+    UI나 입력은 그대로 도므로 정지 중에도 게임이 얼어붙지 않습니다 — 이 분리가 핵심 설계 포인트입니다.</div>
+</section>
+
+<!-- ===================== MAP GEN ===================== -->
+<section id="mapgen">
+  <h2 class="sec">★ 절차적 맵 생성 알고리즘 <span class="tag star">CORE LOGIC</span></h2>
+  <p class="lede">이 프로젝트에서 가장 자신 있는 부분. 매 플레이마다 던전 구조가 달라지는
+    로그라이크 맵을 <b>프리팹 + 그리드 + 큐 기반 랜덤 워크</b>로 생성합니다.</p>
+
+  <div class="grid2" style="align-items:start">
+    <div>
+      <h3>자료구조</h3>
+      <ul style="font-size:14.5px;color:#c9d4e0">
+        <li><code>m_Grid[6][6]</code> — 각 칸에 어떤 방 ID가 점유하는지 기록하는 2D 배열</li>
+        <li><code>RoomPrefab[17]</code> — 1×1, 1×2(수직), 2×1(수평), 2×2(대형) 등 방 도면. 각 방의 <b>그리드 점유 칸 수</b>(gridW/gridH)와 고정 벽 정보를 가짐</li>
+        <li><code>m_DoorRight[6][6] / m_DoorDown[6][6]</code> — 인접 칸 사이 문 연결 여부 (도어 소켓)</li>
+        <li><code>vector&lt;OpenDoor&gt; q</code> — 아직 확장 안 된 "열린 문"들의 작업 큐</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>생성 결과 예시 (6×6)</h4>
+      <div class="mapgrid">
+        <div class="cell"></div><div class="cell r">5</div><div class="cell r">5</div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell r">3</div><div class="cell r">4</div><div class="cell r">4</div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell r">2</div><div class="cell"></div><div class="cell r">4</div><div class="cell"></div><div class="cell"></div>
+        <div class="cell start">1</div><div class="cell r">2</div><div class="cell"></div><div class="cell"></div><div class="cell wait">6</div><div class="cell boss">B</div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#3fb950"></i>시작방(1)</span>
+        <span><i style="background:#58a6ff"></i>일반방</span>
+        <span><i style="background:#d29922"></i>보스대기실(6)</span>
+        <span><i style="background:#f85149"></i>보스방(39)</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>알고리즘 흐름</h3>
+  <pre class="code"><span class="c">// MapManager::CreateRandomMap()  — 보스가 배치될 때까지 최대 50회 재시도</span>
+<span class="k">while</span> (!bossPlaced &amp;&amp; attempts < <span class="n">50</span>) {
+  <span class="c">// 1) 그리드/맵 초기화, 시작방(ID 1)을 (y=3,x=0)에 배치</span>
+  m_Grid[<span class="n">3</span>][<span class="n">0</span>] = <span class="n">1</span>;
+  q.push_back({ <span class="n">1</span>, DIR_RIGHT });   <span class="c">// 시작방의 오른쪽 문을 큐에 투입</span>
+
+  <span class="k">while</span> (!q.empty() &amp;&amp; failCount<<span class="n">1000</span> &amp;&amp; roomCount<<span class="n">32</span>) {
+<span class="hl">    OpenDoor d = q[<span class="f">rand</span>()%q.size()];  q.erase(...);  <span class="c">// 2) 큐에서 랜덤하게 문 하나 pop</span></span>
+    <span class="k">if</span> (이미 연결됨) <span class="k">continue</span>;
+    방의 그리드 좌표(rx,ry) 탐색;
+
+    <span class="c">// 3) 보스 트리거: X좌표가 5에 도달하면 보스 대기실(6) 강제 배치</span>
+    <span class="k">if</span> (!bossPlaced &amp;&amp; targetX==<span class="n">5</span> &amp;&amp; dir==DIR_RIGHT &amp;&amp; 빈칸) {
+      validPrefabs = { <span class="n">6</span> };  forceBoss = <span class="k">true</span>;
+    } <span class="k">else</span> {
+      <span class="c">// 4) 들어갈 수 있는 프리팹(1~5) 후보 수집</span>
+      <span class="k">for</span> (newID = <span class="n">1</span>..<span class="n">5</span>) {
+        targetX/Y 계산 (방향 + 기존방 점유칸 gridW/H 고려);
+        <span class="k">if</span> (그리드 범위 벗어남) <span class="k">continue</span>;
+<span class="hl">        <span class="k">if</span> (점유하려는 모든 칸이 비어있음) validPrefabs.push_back(newID); <span class="c">// 충돌검사</span></span>
+      }
+    }
+    <span class="k">if</span> (validPrefabs.empty()) <span class="k">continue</span>;
+
+    <span class="c">// 5) 후보 중 랜덤 선택 → 그리드에 점유 마킹 + 방 정보 기록</span>
+    newID = validPrefabs[<span class="f">rand</span>()%size];  m_Grid[..] = newRoomID;
+
+    <span class="c">// 6) 새 방 사방을 검사: 인접방 있으면 양방향 연결, 없으면 큐에 새 문 추가</span>
+    <span class="k">for</span> (checkD : 4방향) {
+      <span class="k">if</span> (인접칸에 방 존재) { nextMapID 양방향 연결; }
+      <span class="k">else</span> q.push_back({ newRoomID, checkD });   <span class="c">// 확장 프런티어</span>
+    }
+    <span class="k">if</span> (forceBoss) { bossPlaced=<span class="k">true</span>; <span class="k">break</span>; }
+  }
+  보스방(39) 등록;  <span class="c">// 7) 그리드 전수조사로 m_DoorRight/Down 문 테이블 확정</span>
+}</pre>
+
+  <div class="grid3">
+    <div class="card"><h4>그래프 탐색의 응용</h4><p style="font-size:13.5px;color:#c9d4e0">큐 기반 확장은 <b>BFS의 변형</b>입니다. 단, 큐에서 <b>무작위 인덱스</b>를 뽑아 매번 다른 형태가 나오게 했습니다 — 랜덤 워크 + 충돌검사 조합.</p></div>
+    <div class="card"><h4>이중 안전장치</h4><p style="font-size:13.5px;color:#c9d4e0"><code>failCount&lt;1000</code>로 내부 무한루프를, <code>attempts&lt;50</code>로 "보스 미배치 실패" 케이스를 막아 <b>생성 보장</b>을 확보했습니다.</p></div>
+    <div class="card"><h4>확장성</h4><p style="font-size:13.5px;color:#c9d4e0"><code>InitPrefabs()</code>에 방 도면만 추가하면 알고리즘이 자동으로 새 구조를 만듭니다. 데이터-드리븐 설계.</p></div>
+  </div>
+</section>
+
+<!-- ===================== CAPPING ===================== -->
+<section id="capping">
+  <h2 class="sec">★ 도어 소켓 캡핑 엔진 <span class="tag star">CORE LOGIC</span></h2>
+  <p class="lede">맵을 생성한 뒤 남는 문제: <b>연결되지 않은 문으로 추락</b>. 이를 막기 위해
+    방에 진입할 때마다 그 방의 모든 면을 동적으로 벽으로 막되, <b>실제 연결된 문 위치에만 구멍을 뚫는</b> 캡핑 엔진을 만들었습니다.</p>
+
+  <div class="filename">📄 <b>MapManager::ChangeMap()</b> — 셀 단위 캡핑</div>
+  <pre class="code"><span class="c">// 방이 차지하는 각 그리드 셀(gw×gh)을 순회하며 4면을 검사</span>
+<span class="k">for</span> (y=<span class="n">0</span>..gh) <span class="k">for</span> (x=<span class="n">0</span>..gw) {
+  <span class="k">int</span> cx=rootX+x, cy=rootY+y;  <span class="k">float</span> px=x*MW, py=y*MH;
+
+  <span class="c">// ➡ 우측면: 경계이거나 인접칸이 다른 방인데 '문이 없으면' 통벽</span>
+  <span class="k">if</span> (cx==<span class="n">5</span> || (m_Grid[cy][cx+<span class="n">1</span>]!=roomID &amp;&amp; !m_DoorRight[cy][cx])) {
+<span class="hl">    SetRect(&amp;w.rc, px+MW-<span class="n">30</span>, py, px+MW+<span class="n">30</span>, py+MH);  coll.AddWall(w.rc); <span class="c">// 꽉 막음</span></span>
+  }
+  <span class="c">// 문이 '있으면' 위·아래만 막고 가운데(450~800px)는 통로로 비움</span>
+  <span class="k">else if</span> (m_DoorRight[cy][cx]) {
+<span class="hl">    SetRect(&amp;w.rc, px+MW-<span class="n">30</span>, py-<span class="n">50</span>,  px+MW+<span class="n">30</span>, py+<span class="n">450</span>);  coll.AddWall(...); <span class="c">// 문 위쪽 벽</span></span>
+<span class="hl">    SetRect(&amp;w.rc, px+MW-<span class="n">30</span>, py+<span class="n">800</span>, px+MW+<span class="n">30</span>, py+MH+<span class="n">50</span>); coll.AddWall(...); <span class="c">// 문 아래쪽 벽</span></span>
+  }
+  <span class="c">// 천장/바닥/좌측면도 동일 로직 (m_DoorDown 사용)</span>
+}</pre>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>왜 "동적" 벽인가</h4>
+      <p style="font-size:14px;color:#c9d4e0">맵 구조가 매번 달라지므로 벽을 미리 박아둘 수 없습니다.
+        진입 시점에 <code>m_DynamicWalls</code>를 비우고 그 방의 형태에 맞춰 다시 생성 →
+        같은 프리팹이라도 이웃 연결에 따라 벽이 달라집니다.</p>
+    </div>
+    <div class="card">
+      <h4>이음매 없는 방 이동</h4>
+      <p style="font-size:14px;color:#c9d4e0">문을 통과하면 <b>들어간 높이/폭을 그대로 보존</b>해 반대편에서 튀어나옵니다.
+        2×2 대형 방에서도 어느 셀로 들어왔는지 계산(<code>offsetX/Y</code>)해 좌표가 어긋나지 않습니다.</p>
+      <pre class="code"><span class="c">// 오른쪽 문 통과 시</span>
+knight.pos.x = <span class="n">50.0f</span>;
+knight.pos.y = (gy-new_rY)*SCREEN_HEIGHT + offsetY;</pre>
+    </div>
+  </div>
+  <div class="note"><b class="lab">특수 케이스 처리 ▸</b>
+    보스방(39번)과 보스 대기실은 그리드 바깥 규격이라 자동 캡핑 대신 <b>통짜 사방 벽</b>을 세웁니다.
+    예외를 명시적으로 분기해 일반 로직의 단순함을 유지했습니다.</div>
+</section>
+
+<!-- ===================== CORPSE ===================== -->
+<section id="corpse">
+  <h2 class="sec">★ 시체 레지스트리 — 상태 영속성 <span class="tag star">CORE LOGIC</span></h2>
+  <p class="lede">"방을 나갔다 돌아오면 죽인 몹이 되살아나는" 흔한 문제를 해결했습니다.
+    각 몬스터에 <b>결정론적 고유 ID</b>를 부여하고, 사망 사실을 <code>std::map</code>에 영속화합니다.</p>
+
+  <pre class="code"><span class="c">// 고유 ID = 방번호*1000 + 스폰순서  (재방문해도 동일하게 재현됨)</span>
+<span class="k">int</span> myID = currentRoomID*<span class="n">1000</span> + spawnCounter;   <span class="c">// 예: 3번방 1번째 = 3001</span>
+
+<span class="c">// 방을 떠날 때: 죽어있는 몹의 위치를 명부에 기록</span>
+<span class="k">if</span> (e->isDead) m_CorpseRegistry[e->m_ID] = { e->pos.x, e->pos.y, e->dir };
+
+<span class="c">// 방에 들어올 때: 명부에 있으면 시체 상태로, 없으면 살아있는 상태로 스폰</span>
+<span class="k">if</span> (m_CorpseRegistry.find(myID) != m_CorpseRegistry.end()) {
+  g-><span class="f">Init</span>(info.x, info.y);  g-><span class="f">SetCorpse</span>();  <span class="c">// 죽었던 그 자리에 시체로</span>
+} <span class="k">else</span> {
+  g-><span class="f">Init</span>(<span class="n">400.0f</span> + i*<span class="n">600.0f</span>, ...);          <span class="c">// 원래 리젠 위치에 생존 상태로</span>
+}</pre>
+
+  <div class="grid2">
+    <div class="card"><h4>왜 map 인가</h4><p style="font-size:14px;color:#c9d4e0"><code>map&lt;int, CorpseInfo&gt;</code>는 ID로 O(log n) 조회. 죽은 몹만 저장하므로 메모리도 절약.
+      "키를 어떻게 설계해 상태를 재현하는가"는 클라 개발의 흔한 과제입니다.</p></div>
+    <div class="card"><h4>버그를 코드로 막은 흔적</h4><p style="font-size:14px;color:#c9d4e0"><code>SetCorpse()</code>에서 <code>velocity/gravity</code>를 강제 0으로 초기화합니다 —
+      쓰레기 값이 남으면 시체가 화면 밖으로 날아가는 버그를 직접 디버깅하며 잡은 흔적(주석으로 명시)입니다.</p></div>
+  </div>
+</section>
+
+<!-- ===================== BOSS FSM ===================== -->
+<section id="bossfsm">
+  <h2 class="sec">★ 보스 AI — 유한 상태 머신 <span class="tag star">CORE LOGIC</span></h2>
+  <p class="lede">보스 'Watcher'는 단순 추적이 아니라 <b>거리와 확률로 다음 행동을 결정</b>하는 9-state FSM입니다.
+    상태별로 로직을 격리(<code>switch(state)</code>)하고 <code>ChangeState()</code>로 전이를 한 곳에서 관리합니다.</p>
+
+  <div class="fsm">
+    <div class="node idle"><div class="nm">SLEEP</div><div class="ds">배경에서 대기 · 무적</div></div>
+    <div class="node special"><div class="nm">AWAKE_ROAR</div><div class="ds">포효 등장 연출 · 화면 셰이크</div></div>
+    <div class="node idle"><div class="nm">IDLE</div><div class="ds">거리 측정 → 다음 패턴 결정</div></div>
+    <div class="node"><div class="nm">WALK</div><div class="ds">기사에게 접근</div></div>
+    <div class="node attack"><div class="nm">MELEE</div><div class="ds">근접 2연타(가로→세로)</div></div>
+    <div class="node attack"><div class="nm">ROLL_DASH</div><div class="ds">지상 돌진 · 벽 튕김</div></div>
+    <div class="node special"><div class="nm">ROLL_BOUNCE</div><div class="ds">예측 포물선 3회 바운스</div></div>
+    <div class="node"><div class="nm">ROLL_BACK</div><div class="ds">거리 벌리기</div></div>
+    <div class="node attack"><div class="nm">DIE</div><div class="ds">사망 연출</div></div>
+  </div>
+
+  <h3>전이 규칙 — 확률 기반 의사결정</h3>
+  <pre class="code"><span class="c">// IDLE 상태: 1초 대기 후 플레이어와의 거리로 행동 분기</span>
+<span class="k">if</span> (distToKnight <= <span class="n">300.0f</span>) {        <span class="c">// 근접</span>
+  <span class="k">int</span> r = rand()%<span class="n">100</span>;
+  <span class="k">if</span> (r<<span class="n">60</span>) <span class="f">ChangeState</span>(B_STATE_MELEE);       <span class="c">// 60% 근접 베기</span>
+  <span class="k">else if</span> (r<<span class="n">80</span>) <span class="f">ChangeState</span>(B_STATE_ROLL_DASH); <span class="c">// 20% 돌진</span>
+  <span class="k">else</span> <span class="f">ChangeState</span>(B_STATE_ROLL_BACK);        <span class="c">// 20% 후퇴</span>
+} <span class="k">else</span> {                          <span class="c">// 원거리</span>
+  <span class="k">if</span> (r<<span class="n">30</span>) WALK;  <span class="k">else if</span>(r<<span class="n">70</span>) ROLL_DASH;  <span class="k">else</span> ROLL_BOUNCE; <span class="c">// 30/40/30</span>
+}</pre>
+
+  <h3>하이라이트 — 예측 포물선 바운스(ROLL_BOUNCE)</h3>
+  <p style="font-size:14.5px;color:#c9d4e0">단순히 위로 점프하는 게 아니라, <b>플레이어의 현재 위치를 향한 포물선</b>을 계산해 날아갑니다.
+    체공 시간(약 50프레임)으로 수평 거리를 나눠 필요한 초기 속도를 역산하는 <b>탄도 예측</b>입니다.</p>
+  <pre class="code"><span class="c">// 점프 시작 시: 기사까지의 수평거리 ÷ 예상 체공프레임 = 필요한 수평속도</span>
+gravity   = -<span class="n">25.0f</span>;                       <span class="c">// 강한 상승</span>
+<span class="k">float</span> diffX = knight.pos.x - pos.x;
+<span class="k">float</span> targetV = diffX / <span class="n">50.0f</span>;             <span class="c">// ★ 착지 지점이 플레이어가 되도록 역산</span>
+targetV = clamp(targetV, ±<span class="n">10</span>, ±<span class="n">25</span>);       <span class="c">// 제자리/광속 점프 방지</span>
+velocity.x = targetV;
+
+<span class="c">// 공중에선 마찰 무시 → 깔끔한 포물선. 바닥 착지마다 다시 조준해 3회 추격</span>
+<span class="k">if</span> (gravity==<span class="n">0</span>) { bounceCount++;
+  <span class="k">if</span> (bounceCount>=<span class="n">3</span>) ChangeState(IDLE);
+  <span class="k">else</span> { gravity=-<span class="n">25</span>; targetV 재계산; } <span class="c">// 매 착지마다 재조준 = 끈질긴 추격</span>
+}</pre>
+  <div class="note p"><b class="lab">왜 인상적인가 ▸</b>
+    "AI가 플레이어를 어떻게 추격하나요?"에 <b>물리식을 역산해 도착 지점을 조준한다</b>고 답할 수 있습니다.
+    또 벽에 닿으면 <code>velocity.x = -velocity.x</code>로 당구공처럼 반사시켜 좌우로도 끈질기게 따라붙습니다.</div>
+
+  <h3>슈퍼아머 &amp; 상태 의존 판정</h3>
+  <pre class="code"><span class="c">// 일반 몹과 달리 보스는 피격 시 velocity/gravity를 건드리지 않음 → 넉백 면역</span>
+<span class="k">void</span> <span class="f">TakeDamage</span>(...) {
+  <span class="k">if</span> (state==SLEEP) <span class="k">return</span>;        <span class="c">// 자는 동안 무적</span>
+  hp -= damage;  <span class="k">if</span>(hp<=<span class="n">0</span>) ChangeState(DIE);
+}
+<span class="k">bool</span> <span class="f">CanDealDamage</span>() { <span class="k">return</span> !(state==SLEEP||DIE||AWAKE_ROAR); } <span class="c">// 연출 중 무해</span></pre>
+</section>
+
+<!-- ===================== PHASE ===================== -->
+<section id="phase">
+  <h2 class="sec">다중 보스 페이즈 시스템 <span class="tag">CORE LOGIC</span></h2>
+  <p class="lede">보스방엔 3형제가 있습니다(1은 깨어남, 2·3은 SLEEP). 매니저가 매 프레임
+    보스들의 <b>체력과 생존 여부</b>를 감시하며 페이즈를 진행시킵니다 — 일종의 상위 FSM.</p>
+
+  <pre class="code"><span class="c">// MapManager::Update() — 보스방에서만 작동</span>
+<span class="c">// 페이즈 2: 1번 체력 절반 이하 + 2번이 자고 있으면 → 2번 기상</span>
+<span class="k">if</span> (b1->hp <= BOSS_HP/<span class="n">2</span> &amp;&amp; b2->state==B_STATE_SLEEP)
+  b2-><span class="f">ChangeState</span>(B_STATE_AWAKE_ROAR);
+
+<span class="c">// 페이즈 3: 1·2번 중 누구든 죽으면 → 3번 기상</span>
+<span class="k">if</span> (anyBossDead &amp;&amp; b3->state==B_STATE_SLEEP)
+  b3-><span class="f">ChangeState</span>(B_STATE_AWAKE_ROAR);
+
+<span class="c">// 전멸 순간: 3초 슬로우모션 + 클리어 BGM, 4초 뒤 ENDING 씬 전환</span>
+<span class="k">if</span> (b1&amp;&amp;b2&amp;&amp;b3 모두 DIE) {
+  <span class="k">if</span> (m_GameClearTime==<span class="n">0</span>) { m_GameClearTime=GetTickCount();
+    TIMEMGR-><span class="f">SetTimeSlow</span>(<span class="n">0.3f</span>, <span class="n">3000</span>); SOUND-><span class="f">PlayBGM</span>(SND_BGM_CLEAR); }
+}</pre>
+  <div class="note g"><b class="lab">설계 포인트 ▸</b>
+    개별 보스는 자기 FSM만 신경 쓰고, "언제 누구를 깨울지"는 <b>매니저가 상위에서 조율</b>합니다.
+    책임을 분리(보스=행동 / 매니저=연출·전개)해 각 보스 AI를 단순하게 유지했습니다.</div>
+</section>
+
+<!-- ===================== AUDIO ===================== -->
+<section id="audio">
+  <h2 class="sec">상태 기반 사운드 시스템 <span class="tag">SYSTEM</span></h2>
+  <p class="lede">FMOD의 단순 재생이 가진 한계(루프 끊김·중복 재생·죽은 몹 소리 잔존)를
+    <b>Facade 래퍼 + 상태 검사</b>로 해결했습니다. 게임 코드는 <code>SOUND->PlayBGM(SND_BGM_BOSS)</code>처럼 의미 단위로만 호출합니다.</p>
+
+  <div class="grid3">
+    <div class="card"><h4>BGM 중복 방지</h4><p style="font-size:13.5px;color:#c9d4e0">현재 재생 중인 곡과 같은 트랙 요청이면 <b>재생을 건너뜀</b>. 매 프레임 호출돼도 끊기지 않습니다.</p></div>
+    <div class="card"><h4>루프 자가 복구</h4><p style="font-size:13.5px;color:#c9d4e0">보스 구르기처럼 길게 도는 소리는 <code>IsPlaying(channel)</code>로 채널을 감시해 끊기면 즉시 재가동.</p></div>
+    <div class="card"><h4>사운드 컬링</h4><p style="font-size:13.5px;color:#c9d4e0">몹이 죽으면 <code>StopMonsterSound()</code>로 날갯짓·기어가는 소리를 즉시 음소거. 맵 이동 시에도 일괄 정리.</p></div>
+  </div>
+  <pre class="code"><span class="c">// enum 으로 사운드를 추상화 → 경로/채널은 래퍼 내부에만 존재 (Facade)</span>
+m_SoundIDs[SND_EFF_BOSS_ROLL] = <span class="f">AddSoundFile</span>(<span class="s">"./resource/.../spinground2.wav"</span>, <span class="k">true</span>);
+<span class="c">// 구르는 중 소리가 꺼졌으면 다시 켠다 (끊김 방지)</span>
+<span class="k">if</span> (m_RollSoundChannel==-<span class="n">1</span> || !SOUND-><span class="f">IsPlaying</span>(m_RollSoundChannel))
+  m_RollSoundChannel = SOUND-><span class="f">PlayEffect</span>(SND_EFF_BOSS_ROLL);</pre>
+</section>
+
+<!-- ===================== APPEAL ===================== -->
+<section id="appeal">
+  <h2 class="sec">면접 어필 포인트 <span class="tag">PITCH</span></h2>
+  <p class="lede">이 프로젝트로 무엇을 증명하는지, 클라이언트 프로그래머 관점에서 핵심만 정리했습니다.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🔧 엔진 내부를 안다</h4>
+      <p style="font-size:14px;color:#c9d4e0">게임 루프(고정 타임스텝)·렌더 파이프라인·델타타임·더블버퍼·스프라이트 변환행렬을
+        직접 작성. "엔진이 가려주는 것"을 설명할 수 있습니다.</p>
+    </div>
+    <div class="card">
+      <h4>🧠 알고리즘 설계</h4>
+      <p style="font-size:14px;color:#c9d4e0">큐 기반 절차적 맵 생성(BFS 변형 + 충돌검사 + 생성보장), 동적 벽 캡핑,
+        탄도 예측 AI 등 <b>스스로 설계한 로직</b>이 풍부합니다.</p>
+    </div>
+    <div class="card">
+      <h4>💾 C++ 수명/메모리 관리</h4>
+      <p style="font-size:14px;color:#c9d4e0">ComPtr·unique_ptr·CRTP 싱글톤·가상 소멸자로 누수와 초기화 순서 문제를
+        의식적으로 제거. 모던 C++ 감각을 보유.</p>
+    </div>
+    <div class="card">
+      <h4>🎮 게임필(손맛)에 대한 집착</h4>
+      <p style="font-size:14px;color:#c9d4e0">히트스톱·타임슬로우·카메라 셰이크·포고 점프·착지 보정 등
+        "재미"를 코드로 만드는 디테일을 챙깁니다.</p>
+    </div>
+    <div class="card">
+      <h4>🐛 디버깅 능력</h4>
+      <p style="font-size:14px;color:#c9d4e0">디버그 콜라이더 시각화 토글, 시체 증발 버그 추적(velocity 초기화),
+        프리팹 미리보기 단축키 등 <b>문제를 도구로 만드는</b> 습관.</p>
+    </div>
+    <div class="card">
+      <h4>🏛 구조적 사고</h4>
+      <p style="font-size:14px;color:#c9d4e0">의존성 5계층 분리, 패턴의 의도적 선택, 책임 분리(보스/매니저).
+        혼자 만든 코드라도 <b>유지보수 가능한 구조</b>를 지향합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Q&A ===================== -->
+<section id="qa">
+  <h2 class="sec">예상 질문 &amp; 답변 <span class="tag">INTERVIEW</span></h2>
+  <p class="lede">면접에서 나올 법한 질문과, 이 코드를 근거로 한 답변 스크립트입니다.</p>
+
+  <details class="qa"><summary><span class="q">Q.</span> 게임 루프에서 로직과 렌더링을 왜 분리했나요?</summary>
+    <div class="body"><p>물리/로직을 60틱 고정으로 돌리면 PC 사양과 무관하게 같은 속도가 보장됩니다.
+      렌더는 가능한 만큼 빠르게 돌리되, 밀린 틱은 최대 5회까지만 따라잡게(<code>MAX_FRAMESKIP</code>) 해
+      처리가 더 느려지는 "죽음의 나선"을 막았습니다. 가변 델타타임을 그대로 물리에 쓰면
+      터널링·불안정이 생기기 때문에 고정 스텝을 택했습니다.</p></div>
+  </details>
+
+  <details class="qa"><summary><span class="q">Q.</span> 맵 생성이 무한 루프에 빠지거나 보스가 안 생기면요?</summary>
+    <div class="body"><p>이중 안전장치를 뒀습니다. 내부 확장 루프는 <code>failCount&lt;1000</code>·방 개수 32개로 종료를 보장하고,
+      전체 생성은 <code>attempts&lt;50</code>회까지 재시도하며 <b>보스가 배치될 때까지만</b> 반복합니다.
+      또 보스 자리에 이미 방이 있으면 덮어쓰지 않는 가드가 있어, 최악의 경우에도 깨진 맵이 나오지 않습니다.</p></div>
+  </details>
+
+  <details class="qa"><summary><span class="q">Q.</span> 싱글톤은 안티패턴이라는데 왜 썼나요?</summary>
+    <div class="body"><p>전역 상태 남용의 위험은 인지하고 있습니다. 다만 Camera·Sound·TimeManager처럼
+      <b>게임에 단 하나만 존재하고 어디서든 접근해야 하는 시스템</b>에 한정해 적용했습니다.
+      <code>new</code> 누수와 초기화 순서 문제를 피하려고 Meyers 싱글톤(지역 static)을 CRTP로 통일했고,
+      복사/이동을 <code>delete</code>해 단일성을 강제했습니다. 규모가 커지면 의존성 주입으로 전환할 여지를 둔 설계입니다.</p></div>
+  </details>
+
+  <details class="qa"><summary><span class="q">Q.</span> 보스 AI가 단순 추적과 뭐가 다른가요?</summary>
+    <div class="body"><p>IDLE에서 플레이어와의 거리를 재고 확률 테이블로 패턴을 고르는 FSM입니다.
+      특히 공중 바운스는 <code>거리 ÷ 체공프레임</code>으로 필요한 수평속도를 역산해 <b>플레이어 위치를 조준</b>하고,
+      착지할 때마다 재조준하며 벽에선 반사됩니다. 즉 "쫓아온다"가 아니라 "도착 지점을 예측해 던진다"에 가깝습니다.</p></div>
+  </details>
+
+  <details class="qa"><summary><span class="q">Q.</span> 방을 다시 가도 몹이 안 살아나는 건 어떻게 구현했나요?</summary>
+    <div class="body"><p>각 몹에 <code>방번호×1000+순서</code>의 결정론적 ID를 줍니다. 같은 방은 항상 같은 ID를 재현하죠.
+      방을 떠날 때 죽은 몹의 ID·좌표를 <code>std::map</code>(시체 명부)에 저장하고, 들어올 때 명부에 있으면
+      시체 상태로 스폰합니다. 키 설계로 상태 영속성을 푼 사례입니다.</p></div>
+  </details>
+
+  <details class="qa"><summary><span class="q">Q.</span> 메모리 누수는 어떻게 관리했나요?</summary>
+    <div class="body"><p>GPU 텍스처는 <code>ComPtr</code>로 RAII 관리해 소멸·재생성 시 자동 <code>Release</code>되게 했고,
+      씬은 <code>unique_ptr</code> 소유에 가상 소멸자를 둬 기반 포인터 해제가 안전합니다.
+      맵 이동 시엔 이전 방의 <code>Enemy*</code>들을 <code>delete</code> 후 <code>clear</code>하고, 이펙트는 풀에서 재사용합니다.
+      "수명을 누가 소유하는가"를 타입으로 드러내려 했습니다.</p></div>
+  </details>
+</section>
+
+<!-- ===================== QUALITY ===================== -->
+<section id="quality">
+  <h2 class="sec">코드 품질 개선 이력 <span class="tag">REFACTOR</span></h2>
+  <p class="lede">초기 구현을 리뷰하며 안정성·가독성·보안 측면을 개선했습니다. 각 항목은 코드 주석에 의도까지 남겨두었습니다.</p>
+  <table>
+    <tr><th>분류</th><th>Before</th><th>After</th></tr>
+    <tr><td>텍스처 수명</td><td>raw <code>IDirect3DTexture9*</code>, Release 누락</td><td><code>ComPtr</code> RAII 자동 해제</td></tr>
+    <tr><td>씬 수명</td><td>raw <code>Chap*</code> + 수동 delete</td><td><code>unique_ptr</code> + 가상 소멸자</td></tr>
+    <tr><td>싱글톤</td><td>전역 <code>new</code> / 제각각 static</td><td>CRTP Meyers 싱글톤 통일</td></tr>
+    <tr><td>상수 정의</td><td><code>#define</code> 매크로</td><td><code>constexpr</code> (타입/스코프 보장)</td></tr>
+    <tr><td>입력 처리</td><td>고정 버퍼 + <code>strcat</code> 누적 (오버플로 위험)</td><td>단일 키 직접 비교</td></tr>
+    <tr><td>보안</td><td>DB 자격증명 소스 하드코딩</td><td>코드 제거 + config 분리 주석화</td></tr>
+  </table>
+  <div class="note"><b class="lab">상세 ▸</b> Before/After 전체 비교는
+    <a href="upgrade-report.html">업그레이드 리포트 페이지</a>에서 이슈 단위로 볼 수 있습니다.</div>
+</section>
+
+<footer>
+  ⚔ FrameWork Engine — 자체 제작 2D 액션 게임 엔진 코드 분석 리포트 ·
+  C++ / DirectX 9 / FMOD · 면접 &amp; 학습용 정리 문서<br>
+  좌측 목차로 각 시스템을 탐색하세요. ★ 표시는 직접 설계한 핵심 로직입니다.
+</footer>
+</main>
+</div>
+<a class="toplink" href="#" aria-label="맨 위로">↑</a>
+
+<script>
+// 스크롤 스파이: 현재 보는 섹션을 목차에서 하이라이트
+const links = [...document.querySelectorAll('nav.toc a[href^="#"]')];
+const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+const obs = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      links.forEach(l=>l.classList.remove('active'));
+      const a = map.get(e.target.id);
+      if(a){ a.classList.add('active'); }
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px',threshold:0});
+document.querySelectorAll('section[id]').forEach(s=>obs.observe(s));
+
+// 모바일: 링크 클릭 시 목차 닫기
+document.querySelectorAll('nav.toc a').forEach(a=>a.addEventListener('click',()=>{
+  if(window.innerWidth<=980) document.querySelector('nav.toc').classList.remove('open');
+}));
+</script>
+</body>
+</html>

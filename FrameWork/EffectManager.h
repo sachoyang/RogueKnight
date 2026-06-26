@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Include.h"
+#include "Singleton.h"
 #include <vector>
 
 // 🌟 사용할 이펙트 종류들을 정의합니다. 나중에 기획이 추가되면 여기에 이름만 추가하면 됩니다!
@@ -31,7 +32,8 @@ struct EffectObj {
     bool isDead;
 };
 
-class EffectManager {
+class EffectManager : public Singleton<EffectManager> {
+    friend class Singleton<EffectManager>;
 private:
     EffectManager();
     ~EffectManager();
@@ -45,11 +47,7 @@ private:
     std::vector<Sprite> m_SprSplash;
 
 public:
-    static EffectManager* GetInstance() {
-        static EffectManager instance;
-        return &instance;
-    }
-
+    // 싱글톤 인스턴스는 Singleton<EffectManager>::GetInstance() 가 제공
     void Init();
     void Update();
     void Draw();

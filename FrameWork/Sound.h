@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Singleton.h"
 
 // 여기에 사용할 사운드 이름을 추가하세요.
 enum SoundType {
@@ -31,10 +32,11 @@ enum SoundType {
 };
 
 
-class Sound
+class Sound : public Singleton<Sound>
 {
-
+	friend class Singleton<Sound>;
 private:
+	Sound();   // 외부 생성 차단 (싱글톤)
 
 	int m_SoundIDs[SND_END];
 
@@ -42,15 +44,8 @@ private:
 	SoundType m_CurEffectType;
 
 public:
-
-	Sound();
 	~Sound();
-	// 싱글톤 인스턴스 반환
-	static Sound* GetInstance() {
-		static Sound instance;
-		return &instance;
-	}
-	
+	// 싱글톤 인스턴스는 Singleton<Sound>::GetInstance() 가 제공
 	void Init();
 	void Update();
 	// 재생 함수

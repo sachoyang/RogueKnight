@@ -51,11 +51,6 @@ public:
 		return &instance;
 	}
 	
-//CSoundManager* g_pSoundManager;
-//CSound*		m_Bk1;
-//CSound*		m_Shot;
-
-//int m_Select;
 	void Init();
 	void Update();
 	// 재생 함수

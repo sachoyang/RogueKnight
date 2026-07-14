@@ -629,6 +629,11 @@ void MapManager::ChangeMap(int mapID)
 		}
 	}
 	
+	// =================================================================
+	// [A*] 벽 세팅이 모두 끝난 뒤, 이 맵의 네비게이션 격자를 재생성
+	// =================================================================
+	navGrid.Build(m_pCurrentMapChunk->width, m_pCurrentMapChunk->height);
+
 	// 이전 맵 적들 메모리 정리
 	for (auto e : m_Enemies) delete e;
 	m_Enemies.clear();
@@ -1276,6 +1281,19 @@ void MapManager::Draw()
 	// =======================================================
 	if (coll.isDebugDraw)
 	{
+		// =======================================================
+		// [A*] 네비게이션 격자 시각화
+		//  - 화면에 보이는 셀만: 벽=청록, 열림=노랑, 닫힘=회색 등
+		//  - 추격 중인 모든 적의 경로=빨강, 시작(적)=초록, 기사=보라
+		// =======================================================
+		navGrid.DebugDrawBase();
+		for (auto e : m_Enemies)
+		{
+			if (!e->isDead && e->aiState == AI_CHASE && !e->m_path.empty())
+				navGrid.DebugDrawPath(e->m_path, e->pos.x, e->pos.y);
+		}
+		navGrid.DebugDrawTarget(knight.pos.x, knight.pos.y);
+
 		char debugPrefab[256];
 		sprintf_s(debugPrefab, "Current Prefab ID : %d", m_pCurrentMapChunk->prefabID);
 		dv_font.DrawString(debugPrefab, 0, 0, D3DCOLOR_ARGB(255, 255, 255, 0));

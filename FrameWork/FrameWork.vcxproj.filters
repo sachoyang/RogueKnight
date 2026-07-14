@@ -108,6 +108,9 @@
     <ClInclude Include="Collider.h">
       <Filter>소스 파일\콜라이더</Filter>
     </ClInclude>
+    <ClInclude Include="Pathfinding.h">
+      <Filter>소스 파일\콜라이더</Filter>
+    </ClInclude>
     <ClInclude Include="MapManager.h">
       <Filter>소스 파일\Map</Filter>
     </ClInclude>
@@ -186,6 +189,9 @@
       <Filter>D3D Core\코어 소스</Filter>
     </ClCompile>
     <ClCompile Include="Collider.cpp">
+      <Filter>소스 파일\콜라이더</Filter>
+    </ClCompile>
+    <ClCompile Include="Pathfinding.cpp">
       <Filter>소스 파일\콜라이더</Filter>
     </ClCompile>
     <ClCompile Include="MapManager.cpp">

@@ -1,5 +1,13 @@
 ﻿#pragma once
 #include "Include.h"
+#include <vector>
+
+// 적 AI 상태
+enum EnemyAI
+{
+    AI_PATROL = 0, // 기존 반복 행동(순찰/8자 비행)
+    AI_CHASE       // 플레이어 발견 → A* 추격
+};
 
 // 부모 클래스 (모든 적들의 공통 기능)
 class Enemy
@@ -7,6 +15,17 @@ class Enemy
 public:
 	int m_ID;          // 몬스터 고유 ID (필요하면 사용)
     bool isCorpseFixed;
+
+    // =============== A* 추격 AI 공통 멤버 ===============
+    int aiState;                        // AI_PATROL / AI_CHASE
+    float detectRange;                  // 플레이어 탐지 반경
+    std::vector<D3DXVECTOR2> m_path;    // A*가 만든 월드 waypoint 경로
+    int m_pathIndex;                    // 현재 향하는 waypoint 인덱스
+    DWORD m_lastRepathTime;             // 마지막으로 길을 다시 찾은 시각
+    bool grounded;                      // 바닥에 붙어있는가(지상몹 점프 판정용)
+
+    // 탐지 + 리패스 관리 (매 프레임 자식 Update 앞에서 호출)
+    void UpdateAI();
 
     int m_iSoundChannel; // 현재 재생 중인 몬스터 소리 채널 (없으면 -1)
     void StopMonsterSound(); // 소리 끄기 함수
@@ -30,7 +49,9 @@ public:
     int aniCount;
     DWORD aniTime;
 
-    Enemy() : hp(3), isDead(false), isHit(false), dir(1), gravity(0), type(1), aniCount(0), aniTime(0), m_iSoundChannel(-1) {}    virtual ~Enemy() {}
+    Enemy() : hp(3), isDead(false), isHit(false), dir(1), gravity(0), type(1), aniCount(0), aniTime(0), m_iSoundChannel(-1),
+        aiState(AI_PATROL), detectRange(600.0f), m_pathIndex(0), m_lastRepathTime(0), grounded(false) {}
+    virtual ~Enemy() {}
 
     virtual void Init(float x, float y) = 0; // 자식들이 각자 구현할 초기화
     virtual void Update() = 0;               // 각자의 행동 패턴
@@ -63,7 +84,7 @@ class GroundEnemy : public Enemy
 {
 public:
     float speed;
-    GroundEnemy() { type = 1; speed = 2.0f; }
+    GroundEnemy() { type = 1; speed = 2.0f; detectRange = 550.0f; }
     void Init(float x, float y) override;
     void Update() override;
 };
@@ -74,7 +95,7 @@ class FlyEnemy : public Enemy
 public:
     D3DXVECTOR2 startPos; // 기준점 (8자 비행의 중심)
     DWORD spawnTime;
-    FlyEnemy() { type = 2; }
+    FlyEnemy() { type = 2; detectRange = 700.0f; }
     void Init(float x, float y) override;
     void Update() override;
 };

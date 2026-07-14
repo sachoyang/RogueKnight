@@ -38,6 +38,70 @@ void Enemy::StopMonsterSound() {
     }
 }
 
+// ==========================================
+// [부모] A* 추격 AI 공통 처리
+//  - 플레이어와의 거리로 추격/순찰을 판정하고,
+//    추격 중이면 일정 주기(400ms)마다 A* 경로를 다시 계산한다.
+// ==========================================
+void Enemy::UpdateAI()
+{
+    // 죽었거나 넉백 중이면 AI 정지
+    if (isDead)
+    {
+        aiState = AI_PATROL;
+        m_path.clear();
+        m_pathIndex = 0;
+        return;
+    }
+
+    float dx = knight.pos.x - pos.x;
+    float dy = knight.pos.y - pos.y;
+    float dist = sqrtf(dx * dx + dy * dy);
+
+    // 탐지 범위 안 & 기사 생존 시 추격
+    if (!knight.isDead && dist <= detectRange)
+    {
+        aiState = AI_CHASE;
+
+        DWORD now = GetTickCount();
+        // 매 프레임 A*는 부담 → 주기적으로만 다시 계산 (경로가 비었으면 즉시)
+        if (m_path.empty() || (now - m_lastRepathTime) > 400)
+        {
+            std::vector<D3DXVECTOR2> newPath;
+            if (navGrid.FindPath(pos.x, pos.y, knight.pos.x, knight.pos.y, newPath))
+            {
+                m_path = newPath;
+                m_pathIndex = 0;
+            }
+            m_lastRepathTime = now;
+        }
+    }
+    else
+    {
+        // 범위 밖 → 원래 반복 행동으로 복귀
+        aiState = AI_PATROL;
+        m_path.clear();
+        m_pathIndex = 0;
+    }
+}
+
+// 현재 향할 waypoint를 고른다(도달한 것은 건너뜀). 없으면 false.
+static bool PickWaypoint(std::vector<D3DXVECTOR2>& path, int& idx,
+                         const D3DXVECTOR2& pos, D3DXVECTOR2& outWp)
+{
+    while (idx < (int)path.size())
+    {
+        D3DXVECTOR2 t = path[idx];
+        float ddx = t.x - pos.x;
+        float ddy = t.y - pos.y;
+        // 충분히 가까우면 다음 waypoint로
+        if (fabsf(ddx) < 24.0f && fabsf(ddy) < 48.0f) { idx++; continue; }
+        outWp = t;
+        return true;
+    }
+    return false;
+}
+
 void Enemy::Draw()
 {
     D3DCOLOR color = 0xFFFFFFFF;
@@ -116,6 +180,9 @@ void GroundEnemy::Update()
         }
     }
 
+    // [A*] 플레이어 탐지 & 추격 경로 갱신
+    UpdateAI();
+
     // 허공 정점(gravity=0)에서 얼지 않도록, '바닥에 닿아 속도가 0.0f가 된 순간'만 동결!
     bool isRestingCorpse = (isDead && velocity.x == 0.0f);
 
@@ -126,6 +193,22 @@ void GroundEnemy::Update()
         if (isHit || isDead) {
             pos.x += velocity.x;
             velocity.x *= 0.9f;
+        }
+        else if (aiState == AI_CHASE) {
+            // ===== A* 추격 이동 =====
+            D3DXVECTOR2 wp;
+            bool haveWp = PickWaypoint(m_path, m_pathIndex, pos, wp);
+            // waypoint가 없으면 기사 쪽으로 직진
+            float tx = haveWp ? wp.x : knight.pos.x;
+
+            if (tx > pos.x) { dir = -1; pos.x += speed; } // dir -1 : 오른쪽
+            else            { dir = 1;  pos.x -= speed; } // dir  1 : 왼쪽
+
+            // 다음 목표가 위쪽이고 바닥에 붙어 있으면 점프!
+            if (grounded && haveWp && wp.y < pos.y - 30.0f) {
+                gravity = -12.0f; // 위로 튀어오름
+                grounded = false;
+            }
         }
         else {
             pos.x += (dir == -1) ? speed : -speed;
@@ -143,6 +226,8 @@ void GroundEnemy::Update()
     bool hitWall = false, hitFloor = false;
     RECT temp;
 
+    grounded = false; // 이번 프레임 바닥 접촉 여부 (아래에서 갱신)
+
     for (auto& w : coll.m_Walls) {
         if (!isDead && IntersectRect(&temp, &nextRc, &w)) hitWall = true;
         if (!isDead && IntersectRect(&temp, &cliffRc, &w)) hitFloor = true;
@@ -151,12 +236,15 @@ void GroundEnemy::Update()
             if (gravity >= 0 && (m_rc.bottom - 20) <= w.top) {
                 pos.y = w.top - 40.0f;
                 gravity = 0;
+                grounded = true; // 바닥에 붙음 → 점프 가능
                 if (isDead) velocity.x = 0.0f; // 바닥에 닿는 순간 속도 0 -> 다음 프레임부터 완벽 동결!
             }
         }
     }
 
-    if (!isHit && !isDead) {
+    // 순찰 중일 때만 벽/낭떠러지에서 방향 전환.
+    // (추격 중에는 A* 목표를 향해 dir을 직접 정하므로 뒤집지 않는다)
+    if (!isHit && !isDead && aiState != AI_CHASE) {
         if (hitWall || (!hitFloor && gravity == 0)) dir *= -1;
     }
 
@@ -202,6 +290,9 @@ void FlyEnemy::Update()
             m_iSoundChannel = SOUND->PlayEffect(SND_EFT_FLYER);
         }
     }
+    // [A*] 플레이어 탐지 & 추격 경로 갱신
+    UpdateAI();
+
     bool isRestingCorpse = (isDead && velocity.x == 0.0f);
 
     if (isDead || isHit) {
@@ -229,6 +320,28 @@ void FlyEnemy::Update()
                 }
             }
         }
+    }
+    else if (aiState == AI_CHASE) {
+        // ===== A* 추격 (비행: x/y 모두 경로를 직접 추종) =====
+        D3DXVECTOR2 wp;
+        bool haveWp = PickWaypoint(m_path, m_pathIndex, pos, wp);
+        D3DXVECTOR2 target = haveWp ? wp : knight.pos;
+
+        float ddx = target.x - pos.x;
+        float ddy = target.y - pos.y;
+        float len = sqrtf(ddx * ddx + ddy * ddy);
+        const float flySpeed = 4.5f;
+        if (len > 0.1f) {
+            pos.x += (ddx / len) * flySpeed;
+            pos.y += (ddy / len) * flySpeed;
+        }
+        if (ddx > 0) dir = -1; else dir = 1;
+
+        // 넉백 복귀 시 8자 궤도가 튀지 않도록 중심점을 현재 위치 기준으로 재설정
+        DWORD t = GetTickCount() - spawnTime;
+        float s = 0.0015f;
+        startPos.x = pos.x - 250.0f * sin(t * s);
+        startPos.y = pos.y - 80.0f * sin(t * s * 2.0f);
     }
     else {
         DWORD t = GetTickCount() - spawnTime;

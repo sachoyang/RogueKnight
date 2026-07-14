@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 
 /FrameWork/resource/
+
+# A* 레퍼런스(유니티 C# 코드) - 참고용, 버전관리 제외
+docs/reference/

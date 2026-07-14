@@ -61,6 +61,7 @@
 #include "Key.h"
 #include "Sound.h"
 #include "Collider.h"
+#include "Pathfinding.h"
 
 // =========================================
 // 2단계: 게임 엔티티 (실제로 화면에 등장하는 애들)

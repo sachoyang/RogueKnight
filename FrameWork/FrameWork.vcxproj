@@ -179,6 +179,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="Over.h" />
+    <ClInclude Include="Pathfinding.h" />
     <ClInclude Include="Pause.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="Sound.h" />
@@ -214,6 +215,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Over.cpp" />
+    <ClCompile Include="Pathfinding.cpp" />
     <ClCompile Include="Pause.cpp" />
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="Sprite.cpp" />

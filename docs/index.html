@@ -182,6 +182,7 @@
   <a href="#corpse">★ 시체 레지스트리</a>
   <a href="#bossfsm">★ 보스 FSM</a>
   <a href="#phase">다중 보스 페이즈</a>
+  <a href="#astar">★ A* 길찾기 추격 AI</a>
   <a href="#audio">상태 기반 사운드</a>
 
   <div class="grp">정리</div>
@@ -251,6 +252,7 @@
     <tr><td>물리/충돌</td><td>AABB, X·Y축 분리 해석, 착지 보정(떨림 제거)</td><td><code>Knight.cpp / Collider.cpp</code></td></tr>
     <tr><td>맵 생성</td><td>프리팹 기반 6×6 절차 생성 + 동적 벽 캡핑</td><td><code>MapManager.cpp</code></td></tr>
     <tr><td>AI</td><td>9-state 보스 FSM + 예측 포물선 + 다중 페이즈</td><td><code>Boss.cpp</code></td></tr>
+    <tr><td>길찾기</td><td>연속 월드 격자화 + A* 추격 + 지상/비행 경로 추종</td><td><code>Pathfinding.cpp / Enemy.cpp</code></td></tr>
     <tr><td>게임필</td><td>히트스톱 · 타임슬로우 · 카메라 셰이크 · 포고점프</td><td><code>TimeManager.cpp / Camera.cpp</code></td></tr>
     <tr><td>사운드</td><td>FMOD 래핑, 상태기반 재생, 사망 컬링, 루프 복구</td><td><code>Sound.cpp / FmodSound.cpp</code></td></tr>
   </table>
@@ -799,6 +801,107 @@ velocity.x = targetV;
     책임을 분리(보스=행동 / 매니저=연출·전개)해 각 보스 AI를 단순하게 유지했습니다.</div>
 </section>
 
+<!-- ===================== A* PATHFINDING ===================== -->
+<section id="astar">
+  <h2 class="sec">★ A* 길찾기 추격 AI <span class="tag star">CORE LOGIC</span></h2>
+  <p class="lede">순찰만 하던 잡몹에게 <b>지형을 이해하고 플레이어를 쫓아오는 지능</b>을 넣었습니다.
+    핵심 난관은 <i>레퍼런스 A*는 이미 격자(<code>Node[,]</code>)가 있는 Unity 예제</i>인데,
+    이 게임은 <b>격자가 없는 연속 물리 월드</b>라는 점. 그래서 월드를 <b>40px 셀로 래스터화</b>해
+    직접 <code>NavGrid</code>를 만들고 그 위에 A*를 이식했습니다.</p>
+
+  <div class="grid2" style="align-items:start">
+    <div>
+      <h3>연속 월드 → 격자 래스터화</h3>
+      <ul style="font-size:14.5px;color:#c9d4e0">
+        <li><code>NavGrid::Build(mapW,mapH)</code> — 맵 크기를 <code>CELL_SIZE=40</code>으로 나눠(올림) <code>rows×cols</code> 셀 생성</li>
+        <li><code>MarkWalls()</code> — 각 셀 RECT를 충돌 엔진의 <code>coll.m_Walls</code> 전부와 <code>IntersectRect</code> → 겹치면 <b>이동 불가(walkable=false)</b></li>
+        <li>맵이 바뀔 때만 재생성: <code>MapManager::ChangeMap()</code>에서 <b>동적 벽 캡핑이 끝난 직후</b> <code>navGrid.Build()</code> 호출 — 절차적 맵 구조가 그대로 길찾기에 반영됨</li>
+        <li>각 노드는 <b>셀 중심의 월드 좌표</b>(<code>worldX/Y</code>)를 들고 있어, 경로가 곧 월드 waypoint가 됨</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>A* 노드 구조</h4>
+      <pre class="code"><span class="k">struct</span> <span class="t">PathNode</span> {
+  <span class="k">int</span> gCost;      <span class="c">// 시작→현재 실제 비용</span>
+  <span class="k">int</span> hCost;      <span class="c">// 현재→목표 추정(휴리스틱)</span>
+  <span class="k">bool</span> walkable; <span class="c">// 벽이면 false</span>
+  <span class="t">PathNode</span>* parent;  <span class="c">// 경로 역추적용</span>
+  <span class="k">float</span> worldX, worldY;
+  <span class="k">int</span> <span class="f">FCost</span>() { <span class="k">return</span> gCost + hCost; }
+};</pre>
+      <p style="font-size:13px;color:#8b949e;margin:8px 0 0">
+        휴리스틱은 레퍼런스와 동일하게 <b>대각 14 · 직선 10</b> (옥타일 거리).</p>
+    </div>
+  </div>
+
+  <h3>A* 본체 — 최소 FCost 확장</h3>
+  <div class="filename">📄 <b>Pathfinding.cpp</b> — NavGrid::FindPath()</div>
+  <pre class="code"><span class="c">// 시작/도착 셀이 벽과 겹쳐도(적이 바닥 위에 서 있는 등) 끝점은 통과 허용</span>
+startNode->walkable = <span class="k">true</span>;  targetNode->walkable = <span class="k">true</span>;
+openList.push_back(startNode);
+
+<span class="k">while</span> (!openList.empty()) {
+<span class="hl">  <span class="c">// 1) 오픈 리스트에서 최소 FCost(동률이면 hCost) 노드 선택</span></span>
+<span class="hl">  <span class="k">for</span> (i : openList) <span class="k">if</span> (a->FCost() < b->FCost() ||</span>
+<span class="hl">      (a->FCost()==b->FCost() &amp;&amp; a->hCost < b->hCost)) bestIdx = i;</span>
+  PathNode* curr = openList[bestIdx];
+
+  <span class="k">if</span> (curr == targetNode) {           <span class="c">// 2) 도착 → parent 따라 역추적</span>
+    <span class="k">while</span> (p) { rev.push_back({p->worldX, p->worldY}); p = p->parent; }
+    <span class="k">return</span> <span class="k">true</span>;                        <span class="c">// 역순 뒤집어 시작→목표 waypoint 반환</span>
+  }
+  openList.erase(bestIdx);  closedList.push_back(curr);
+
+  <span class="k">for</span> (nb : <span class="f">Neighbours</span>(curr)) {         <span class="c">// 3) 8방향 이웃 완화(relax)</span>
+    <span class="k">if</span> (!nb->walkable || inClosed(nb)) <span class="k">continue</span>;
+    <span class="k">int</span> newG = curr->gCost + <span class="f">GetDistance</span>(curr, nb);
+<span class="hl">    <span class="k">if</span> (!inOpen(nb) || newG < nb->gCost) {   <span class="c">// 더 싼 길 발견 시 갱신</span></span>
+<span class="hl">      nb->gCost = newG;  nb->hCost = GetDistance(nb, target);  nb->parent = curr;</span>
+      <span class="k">if</span> (!inOpen(nb)) openList.push_back(nb);
+    }
+  }
+}</pre>
+
+  <h3>격자 경로 → 게임 이동 (지상 vs 비행)</h3>
+  <p style="font-size:14.5px;color:#c9d4e0">경로(waypoint 리스트)를 몹 타입별로 다르게 소비합니다.
+    공통 처리는 부모 <code>Enemy::UpdateAI()</code>에, 이동 방식은 자식이 담당하는 <b>Template Method 구조</b>입니다.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🦶 지상몹 — 수평 추적 + 점프</h4>
+      <p style="font-size:13.5px;color:#c9d4e0">X축으로만 waypoint를 따라가되,
+        <b>다음 목표가 30px 이상 위</b>이고 바닥에 붙어 있으면 <code>gravity=-12</code>로 점프해 턱을 넘습니다.
+        추격 중엔 벽·낭떠러지 방향전환 로직을 꺼서, A* 목표 방향(<code>dir</code>)을 그대로 유지합니다.</p>
+      <pre class="code"><span class="k">if</span> (grounded &amp;&amp; haveWp &amp;&amp; wp.y < pos.y-<span class="n">30</span>) {
+  gravity = -<span class="n">12.0f</span>; grounded = <span class="k">false</span>; <span class="c">// 점프</span>
+}</pre>
+    </div>
+    <div class="card">
+      <h4>🦇 비행몹 — 벡터 정규화 직진</h4>
+      <p style="font-size:13.5px;color:#c9d4e0">중력이 없으니 waypoint를 향한 <b>방향 벡터를 정규화</b>해 X·Y 동시 이동.
+        추격이 끝나 원래 <b>8자 비행</b>으로 복귀할 때 궤도가 튀지 않도록, 현재 위치 기준으로 <code>startPos</code>(궤도 중심)를 재설정합니다.</p>
+      <pre class="code"><span class="k">float</span> len = sqrtf(ddx*ddx + ddy*ddy);
+pos.x += (ddx/len) * flySpeed;
+pos.y += (ddy/len) * flySpeed;</pre>
+    </div>
+  </div>
+
+  <div class="note"><b class="lab">성능 — 매 프레임 A*를 안 돌린다 ▸</b>
+    A*는 비용이 크므로 <b>탐지 범위 안일 때만</b>, 그것도 <b>400ms마다(또는 경로가 비었을 때 즉시)</b> 재계산합니다(<code>m_lastRepathTime</code> 가드).
+    또 waypoint 도달 판정에 여유(<code>±24 / ±48px</code>)를 둬, 셀 경계에서 몹이 떠는 것을 막았습니다.</div>
+
+  <div class="note g"><b class="lab">디버그 시각화 ▸</b>
+    <code>/</code> 디버그 모드에서 <b>화면에 보이는 셀만</b> 상태별 반투명 색으로 오버레이합니다 —
+    <span class="pill o">청록=벽</span> <span class="pill" style="color:#d29922;border-color:#d29922">노랑=열림</span>
+    <span class="pill" style="color:#8b949e">회색=닫힘</span> <span class="pill" style="color:#f85149;border-color:#f85149">빨강=경로</span>
+    <span class="pill g">초록=적</span> <span class="pill p">보라=기사</span>.
+    <code>DrawPrimitiveUP(TRIANGLESTRIP)</code>로 알파 블렌딩 채움 박스를 그려, A*가 실제로 어떻게 탐색하는지 눈으로 검증합니다.</div>
+
+  <div class="note p"><b class="lab">면접 포인트 ▸</b>
+    "레퍼런스는 격자가 주어졌지만, 우리 게임은 연속 월드라 <b>충돌 벽으로부터 격자를 스스로 구축</b>해야 했다"는 이식 과정이 핵심 어필입니다.
+    또 <b>같은 A* 경로를 지상/비행이 다르게 소비</b>(점프 vs 벡터 직진)하고, <b>리패스 주기 제한으로 비용을 통제</b>한 점까지 함께 설명할 수 있습니다.</div>
+</section>
+
 <!-- ===================== AUDIO ===================== -->
 <section id="audio">
   <h2 class="sec">상태 기반 사운드 시스템 <span class="tag">SYSTEM</span></h2>
@@ -831,7 +934,7 @@ m_SoundIDs[SND_EFF_BOSS_ROLL] = <span class="f">AddSoundFile</span>(<span class=
     <div class="card">
       <h4>🧠 알고리즘 설계</h4>
       <p style="font-size:14px;color:#c9d4e0">큐 기반 절차적 맵 생성(BFS 변형 + 충돌검사 + 생성보장), 동적 벽 캡핑,
-        탄도 예측 AI 등 <b>스스로 설계한 로직</b>이 풍부합니다.</p>
+        탄도 예측 AI, <b>연속 월드를 격자화한 A* 길찾기</b> 등 <b>스스로 설계한 로직</b>이 풍부합니다.</p>
     </div>
     <div class="card">
       <h4>💾 C++ 수명/메모리 관리</h4>
@@ -885,6 +988,14 @@ m_SoundIDs[SND_EFF_BOSS_ROLL] = <span class="f">AddSoundFile</span>(<span class=
     <div class="body"><p>IDLE에서 플레이어와의 거리를 재고 확률 테이블로 패턴을 고르는 FSM입니다.
       특히 공중 바운스는 <code>거리 ÷ 체공프레임</code>으로 필요한 수평속도를 역산해 <b>플레이어 위치를 조준</b>하고,
       착지할 때마다 재조준하며 벽에선 반사됩니다. 즉 "쫓아온다"가 아니라 "도착 지점을 예측해 던진다"에 가깝습니다.</p></div>
+  </details>
+
+  <details class="qa"><summary><span class="q">Q.</span> 격자도 없는 게임에 A* 길찾기를 어떻게 넣었나요?</summary>
+    <div class="body"><p>참고한 A*는 이미 <code>Node[,]</code> 격자가 있는 Unity 예제였는데, 이 게임은 연속 물리 월드라 격자가 없었습니다.
+      그래서 맵을 <code>40px</code> 셀로 래스터화하는 <code>NavGrid</code>를 직접 만들고, 각 셀을 충돌 엔진의 벽 RECT들과
+      <code>IntersectRect</code>해 이동 가능/불가를 마킹했습니다. 격자는 맵이 바뀔 때(동적 벽 캡핑 직후)만 재생성합니다.
+      A* 자체는 최소 <code>FCost</code> 노드를 확장하고 <code>parent</code>로 경로를 역추적하는 표준 구현이며,
+      결과 waypoint는 셀 중심의 월드 좌표라 그대로 몹 이동에 씁니다. 비용이 크니 <b>탐지 범위 안에서 400ms마다만</b> 다시 계산합니다.</p></div>
   </details>
 
   <details class="qa"><summary><span class="q">Q.</span> 방을 다시 가도 몹이 안 살아나는 건 어떻게 구현했나요?</summary>

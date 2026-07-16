@@ -1,4 +1,5 @@
 ﻿#include "Include.h"
+#include <cfloat>   // FLT_MAX
 
 MapManager mapMng;
 
@@ -1284,14 +1285,57 @@ void MapManager::Draw()
 		// =======================================================
 		// [A*] 네비게이션 격자 시각화
 		//  - 화면에 보이는 셀만: 벽=청록, 열림=노랑, 닫힘=회색 등
-		//  - 추격 중인 모든 적의 경로=빨강, 시작(적)=초록, 기사=보라
+		//  - 탐색 셀(열림/닫힘/이웃) 오버레이: 격자 visual은 전역 1벌뿐이라
+		//    기사와 '가장 가까운 추격 적' 한 마리 기준으로 고정해서 그린다
+		//    (안 그러면 리페스 순서에 따라 매 프레임 다른 적 것으로 깜빡임)
+		//  - 추격 중인 적의 경로선: 적마다 다른 색(겹쳐도 구분됨), 기사=보라
 		// =======================================================
+
+		// 탐색 셀 오버레이를 '가장 가까운 추격 적' 기준으로 고정
+		Enemy* overlayEnemy = nullptr;
+		float overlayDistSq = FLT_MAX;
+		for (auto e : m_Enemies)
+		{
+			if (e->isDead || e->aiState != AI_CHASE || e->m_path.empty())
+				continue;
+			float dx = e->pos.x - knight.pos.x;
+			float dy = e->pos.y - knight.pos.y;
+			float distSq = dx * dx + dy * dy;
+			if (distSq < overlayDistSq) { overlayDistSq = distSq; overlayEnemy = e; }
+		}
+		// 대표 적으로 A*를 한 번 더 돌려 격자 visual(열림/닫힘/이웃)을 그 적 것으로 확정.
+		// (결과 경로는 버림 — 순수 시각화용, 실제 이동은 각 적의 m_path를 그대로 사용)
+		if (overlayEnemy)
+		{
+			std::vector<D3DXVECTOR2> overlayScratch;
+			navGrid.FindPath(overlayEnemy->pos.x, overlayEnemy->pos.y,
+			                 knight.pos.x, knight.pos.y, overlayScratch);
+		}
+
 		navGrid.DebugDrawBase();
+
+		// 적별 경로 색 팔레트 (겹쳐도 서로 구분되도록 반투명 서로 다른 색)
+		static const D3DCOLOR pathPalette[] = {
+			D3DCOLOR_ARGB(160, 230,  40,  40), // 빨강
+			D3DCOLOR_ARGB(160,  40, 160, 255), // 파랑
+			D3DCOLOR_ARGB(160, 255, 160,  20), // 주황
+			D3DCOLOR_ARGB(160,  40, 210, 120), // 초록
+			D3DCOLOR_ARGB(160, 210,  60, 220), // 자주
+			D3DCOLOR_ARGB(160, 230, 220,  40), // 노랑
+		};
+		const int paletteCount = sizeof(pathPalette) / sizeof(pathPalette[0]);
+
+		int enemyIdx = 0;
 		for (auto e : m_Enemies)
 		{
 			if (!e->isDead && e->aiState == AI_CHASE && !e->m_path.empty())
-				navGrid.DebugDrawPath(e->m_path, e->pos.x, e->pos.y);
+			{
+				D3DCOLOR col = pathPalette[enemyIdx % paletteCount];
+				navGrid.DebugDrawPath(e->m_path, e->pos.x, e->pos.y, col);
+				enemyIdx++;
+			}
 		}
+
 		navGrid.DebugDrawTarget(knight.pos.x, knight.pos.y);
 
 		char debugPrefab[256];

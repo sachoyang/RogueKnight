@@ -151,6 +151,15 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D "$(ProjectDir)fmodex64.dll" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)fmodex.dll" "$(OutDir)"
+xcopy /Y /D "$(ProjectDir)libmysql.dll" "$(OutDir)"
+xcopy /Y /D /E /I "$(ProjectDir)resource" "$(OutDir)resource"
+if not exist "$(OutDir)Save" mkdir "$(OutDir)Save"
+xcopy /Y /D /E /I "$(ProjectDir)Save" "$(OutDir)Save"</Command>
+      <Message>Copying runtime DLLs and resources to output directory...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Boss.h" />

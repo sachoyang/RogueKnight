@@ -320,21 +320,20 @@ void NavGrid::DebugDrawBase()
     }
 }
 
-void NavGrid::DebugDrawPath(const std::vector<D3DXVECTOR2>& path, float startX, float startY)
+void NavGrid::DebugDrawPath(const std::vector<D3DXVECTOR2>& path, float startX, float startY,
+                           D3DCOLOR pathColor)
 {
     if (!Valid()) return;
 
-    const BYTE A = 160;
     for (size_t i = 0; i < path.size(); ++i)
     {
         PathNode* n = NodeFromWorld(path[i].x, path[i].y);
         if (!n) continue;
-        D3DCOLOR col = D3DCOLOR_ARGB(A, 230, 40, 40); // 빨강 경로
         float wl = (float)(n->col * CELL_SIZE) + 6;
         float wt = (float)(n->row * CELL_SIZE) + 6;
         float wr = (float)((n->col + 1) * CELL_SIZE) - 6;
         float wb = (float)((n->row + 1) * CELL_SIZE) - 6;
-        FillCell(wl, wt, wr, wb, col);
+        FillCell(wl, wt, wr, wb, pathColor);
     }
 
     // 시작(적) 셀은 초록

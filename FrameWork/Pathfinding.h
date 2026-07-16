@@ -75,7 +75,9 @@ public:
     // 화면(카메라)에 보이는 셀만 상태별 색으로 채워 그린다.
     void DebugDrawBase();
     // 특정 경로(waypoint들)를 빨강, 시작 셀을 초록으로 오버레이.
-    void DebugDrawPath(const std::vector<D3DXVECTOR2>& path, float startX, float startY);
+    // pathColor: 적마다 다른 색을 주면 여러 경로가 겹쳐도 구분된다 (기본=빨강)
+    void DebugDrawPath(const std::vector<D3DXVECTOR2>& path, float startX, float startY,
+                       D3DCOLOR pathColor = D3DCOLOR_ARGB(160, 230, 40, 40));
     // 타겟(기사) 셀을 보라색으로.
     void DebugDrawTarget(float x, float y);
 

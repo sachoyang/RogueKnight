@@ -201,8 +201,14 @@ void GroundEnemy::Update()
             // waypoint가 없으면 기사 쪽으로 직진
             float tx = haveWp ? wp.x : knight.pos.x;
 
-            if (tx > pos.x) { dir = -1; pos.x += speed; } // dir -1 : 오른쪽
-            else            { dir = 1;  pos.x -= speed; } // dir  1 : 왼쪽
+            // 스프라이트는 항상 플레이어를 바라봄 (dir -1 : 오른쪽, dir 1 : 왼쪽)
+            dir = (knight.pos.x >= pos.x) ? -1 : 1;
+
+            // 수평 이동은 데드존 밖일 때만 → 목표가 거의 정면이면 정지(좌우 진동 제거)
+            float dxToWp = tx - pos.x;
+            const float DEAD = 8.0f;
+            if      (dxToWp >  DEAD) pos.x += speed;
+            else if (dxToWp < -DEAD) pos.x -= speed;
 
             // 다음 목표가 위쪽이고 바닥에 붙어 있으면 점프!
             if (grounded && haveWp && wp.y < pos.y - 30.0f) {

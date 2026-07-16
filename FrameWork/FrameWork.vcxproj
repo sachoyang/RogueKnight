@@ -75,8 +75,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(DXSDK_DIR)Include;C:\Program Files\MySQL\MySQL Server 5.7\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(OutDir);$(DXSDK_DIR)Lib\x64;C:\Program Files\MySQL\MySQL Server 5.7\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(OutDir);$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -154,7 +154,6 @@
     <PostBuildEvent>
       <Command>xcopy /Y /D "$(ProjectDir)fmodex64.dll" "$(OutDir)"
 xcopy /Y /D "$(ProjectDir)fmodex.dll" "$(OutDir)"
-xcopy /Y /D "$(ProjectDir)libmysql.dll" "$(OutDir)"
 xcopy /Y /D /E /I "$(ProjectDir)resource" "$(OutDir)resource"
 if not exist "$(OutDir)Save" mkdir "$(OutDir)Save"
 xcopy /Y /D /E /I "$(ProjectDir)Save" "$(OutDir)Save"</Command>
@@ -182,11 +181,6 @@ xcopy /Y /D /E /I "$(ProjectDir)Save" "$(OutDir)Save"</Command>
     <ClInclude Include="Logo.h" />
     <ClInclude Include="MapManager.h" />
     <ClInclude Include="Menu.h" />
-    <ClInclude Include="Mysql.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="Over.h" />
     <ClInclude Include="Pathfinding.h" />
     <ClInclude Include="Pause.h" />
@@ -218,11 +212,6 @@ xcopy /Y /D /E /I "$(ProjectDir)Save" "$(OutDir)Save"</Command>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MapManager.cpp" />
     <ClCompile Include="Menu.cpp" />
-    <ClCompile Include="Mysql.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="Over.cpp" />
     <ClCompile Include="Pathfinding.cpp" />
     <ClCompile Include="Pause.cpp" />

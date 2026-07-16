@@ -28,9 +28,6 @@
     <Filter Include="소스 파일\GameManager">
       <UniqueIdentifier>{cebaf1a7-eceb-4a76-b89b-546059c9a4bf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="소스 파일\Mysql">
-      <UniqueIdentifier>{8f36a8e7-495b-493c-9a78-ed4359633356}</UniqueIdentifier>
-    </Filter>
     <Filter Include="소스 파일\콜라이더">
       <UniqueIdentifier>{12a0cf25-2be5-4e1d-ad05-c2a84868a263}</UniqueIdentifier>
     </Filter>
@@ -101,9 +98,6 @@
     </ClInclude>
     <ClInclude Include="DeviceFont.h">
       <Filter>D3D Core\코어 헤더파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Mysql.h">
-      <Filter>소스 파일\Mysql</Filter>
     </ClInclude>
     <ClInclude Include="Collider.h">
       <Filter>소스 파일\콜라이더</Filter>
@@ -178,9 +172,6 @@
     </ClCompile>
     <ClCompile Include="DeviceFont.cpp">
       <Filter>D3D Core\코어 소스</Filter>
-    </ClCompile>
-    <ClCompile Include="Mysql.cpp">
-      <Filter>소스 파일\Mysql</Filter>
     </ClCompile>
     <ClCompile Include="Game.cpp">
       <Filter>D3D Core\코어 소스</Filter>

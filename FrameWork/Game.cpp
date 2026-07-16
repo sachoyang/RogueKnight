@@ -26,8 +26,6 @@ void Game::Init()
 	m_bPaused = false;
 
 	m_TutorialImg.Create("./resource/Img/UI/Tutorial_Key.png", false, 0);
-	// 데이타 베이스///////////////////
-	// sql.Init();
 }
 
 void Game::Draw()
@@ -55,8 +53,6 @@ void Game::Draw()
 	{
 		m_pPause->Render();
 	}
-	// 데이타 베이스///////////////////
-	// sql.Draw();
 }
 
 // Chap, 재정의 함수 호출
@@ -125,10 +121,6 @@ void Game::Update(double frame)
 		//// 입 맛에 맞게
 		//mapMng.Update(130);
 		//Gmanager.Update();
-
-		// 데이타 베이스///////////////////
-		// 입 맛에 맞게 (여기선 안쓰임..프레임 값이 필요 할때만.. 그냥 방법만...)
-		//sql.Update(frame+3000);
 
 		a = GetTickCount64();
 	}

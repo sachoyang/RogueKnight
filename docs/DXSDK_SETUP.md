@@ -48,5 +48,5 @@ Test-Path "$env:DXSDK_DIR\Lib\x64\d3dx9.lib" # True 나와야 정상
 ```
 
 ## 참고
-- MySQL 경로(`C:\Program Files\MySQL\MySQL Server 5.7\...`)도 IncludePath/LibraryPath에 있지만
-  `Mysql.cpp`는 현재 빌드 제외(ExcludedFromBuild) 상태라 없어도 빌드는 된다.
+- MySQL/DB 기능은 사용하지 않으므로 프로젝트에서 완전히 제거되었다
+  (`Mysql.cpp/.h`, `libmysql.dll`, MySQL Include/Library 경로 모두 삭제).

@@ -15,11 +15,7 @@
 #pragma comment(lib,"d3dx9.lib")
 #pragma comment(lib,"dsound.lib")
 #pragma comment(lib, "legacy_stdio_definitions.lib")
-// 데이타 베이스///////////////////
-//#include <my_global.h>
 #include <winsock2.h>
-//#include <mysql.h>
-//#pragma comment(lib, "libmySQL.lib")
 
 //////////////////////////////////
 
@@ -91,9 +87,6 @@
 #include "Over.h"
 #include "Game.h"
 #include "Ending.h"
-
-// 데이타 베이스///////////////////
-//#include "Mysql.h"
 
 /* ---------------------------------------------------
 ///////////////// 사용자 추가 파일 ///////////////////
